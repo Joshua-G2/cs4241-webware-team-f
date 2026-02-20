@@ -1,12 +1,31 @@
-// import "../   ... .css";
+import React, { useState, useEffect } from 'react';
 
-function Test3() {
+
+function DataDisplay() {
+    const [items, setItems] = useState([]);
+
+    useEffect(() => {
+        // Fetch from your Node.js backend
+        fetch('http://localhost:5000/api/data')
+            .then(res => res.json())
+            .then(data => setItems(data))
+            .catch(err => console.error(err));
+    }, []);
 
     return (
         <div>
-            <p>This is test page 3!</p>
+            <h2>My MongoDB Data</h2>
+
+            <ul>
+                {items.map((item) => (
+                    <li key={item._id}>
+                        <strong>{item.name}</strong>: {item.value}
+                    </li>
+                ))}
+            </ul>
+
         </div>
     );
 }
 
-export default Test3;
+export default DataDisplay;
