@@ -31,6 +31,10 @@ function NavBar() {
                 e.preventDefault();
                 navigate("/data-privacy");
             }}>Data Privacy</button>
+            <button className="button" onClick={(e) => {
+                e.preventDefault();
+                navigate("/enrollment");
+            }}>Add Enrollment</button>
         </div>
     );
 }
