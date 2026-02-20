@@ -7,6 +7,7 @@ import Test2 from "./components/Test2.jsx";
 import Test1 from "./components/Test1.jsx";
 import Dashboards from "./components/Dashboards.jsx";
 import Login from "./components/Login.jsx";
+import EnrollForm from "./components/EnrollForm.jsx";
 
 function App() {
   const [count, setCount] = useState(0)
@@ -20,6 +21,7 @@ function App() {
                 <Route path="/Test2" element={<Test2/>} />
                 <Route path="/Test3" element={<Test3/>} />
                 <Route path="/Dashboards" element={<Dashboards/>} />
+                <Route path="/enrollment" element={<EnrollForm/>} />
             </Routes>
         </Router>
     );

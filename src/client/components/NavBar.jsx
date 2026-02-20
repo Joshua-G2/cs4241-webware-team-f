@@ -35,6 +35,10 @@ function NavBar() {
                 e.preventDefault();
                 navigate("/Dashboards");
             }}>Dashboards</button>
+            <button className="button" onClick={(e) => {
+                e.preventDefault();
+                navigate("/enrollment");
+            }}>Add Enrollment</button>
         </div>
     );
 }
