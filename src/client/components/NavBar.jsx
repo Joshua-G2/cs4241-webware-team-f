@@ -29,8 +29,8 @@ function NavBar() {
             }}>Test2</button>
             <button className="button" onClick={(e) => {
                 e.preventDefault();
-                navigate("/data-privacy");
-            }}>Data Privacy</button>
+                navigate("/Dashboards");
+            }}>Dashboards</button>
         </div>
     );
 }
