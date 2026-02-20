@@ -29,6 +29,10 @@ function NavBar() {
             }}>Test2</button>
             <button className="button" onClick={(e) => {
                 e.preventDefault();
+                navigate("/Test3");
+            }}>Test3</button>
+            <button className="button" onClick={(e) => {
+                e.preventDefault();
                 navigate("/Dashboards");
             }}>Dashboards</button>
         </div>
