@@ -1,10 +1,14 @@
-@tailwind base;
-@tailwind components;
+/*@tailwind base;*/
+/*@tailwind components;*/
 @tailwind utilities;
 
 @reference "./index.css";
 
 @layer components {
+  .nav-bar {
+    @apply fixed top-0 left-0 right-0 z-50 flex justify-center items-center h-16 bg-gray-600 shadow-md;
+  }
+
   .logo {
     @apply h-[6em] p-[1.5em] transition-[filter] duration-300 will-change-[filter];
   }
