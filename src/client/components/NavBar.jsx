@@ -29,8 +29,8 @@ function NavBar() {
             }}>Test2</button>
             <button className="button" onClick={(e) => {
                 e.preventDefault();
-                navigate("/Test3");
-            }}>Test3</button>
+                navigate("/DataDisplay");
+            }}>DataDisplay</button>
             <button className="button" onClick={(e) => {
                 e.preventDefault();
                 navigate("/Dashboards");
