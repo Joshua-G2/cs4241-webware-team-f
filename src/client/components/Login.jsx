@@ -6,7 +6,7 @@ function Login() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const navigate = useNavigate()
-    // let token = localStorage.getItem('token'); //store as global var
+    let token = localStorage.getItem('token'); //store as global var
     const [badLogin, setBadLogin] = useState("");
 
     useEffect( () => {
@@ -17,41 +17,38 @@ function Login() {
         e.preventDefault();
         console.log("Login Received: ", username, password);
 
-        // const body = JSON.stringify( {username: username, password: password} );
-        // const response = await fetch( "/login", {
-        //     method:'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json' //tell server using json!
-        //     },
-        //     body
-        // })
+        const body = JSON.stringify( {username: username, password: password} );
+        const response = await fetch( "/login", {
+            method:'POST',
+            headers: {
+                'Content-Type': 'application/json' //tell server using json!
+            },
+            body
+        })
         setUsername("");
         setPassword("");
 
-        // const text = await response.text()
-        // console.log("text:", text)
-        // try {
-        //     const received_tk = JSON.parse(text)
-        //     console.log("received_tk:", received_tk)
-        //
-        //     if (received_tk && received_tk.token) {
-        //         console.log("received token", received_tk.token);
-        //         localStorage.setItem('token', received_tk.token); //STORE THE TOKEN
-        //         localStorage.setItem('username', username); //STORE FOR USE LATER
-        //         setBadLogin("");
-        //         navigate('/grocery-list')
-        //     } else {
-        //         console.log("Bad Login")
-        //         setBadLogin("Invalid username or password.");
-        //     }
-        // } catch (error) {
-        //     console.log(error);
-        //     setBadLogin("Invalid username or password.");
-        // }
+        //parse token
+        const text = await response.text()
+        console.log("text:", text)
+        try {
+            const received_tk = JSON.parse(text)
+            console.log("received_tk:", received_tk)
 
-
-
-
+            if (received_tk && received_tk.token) {
+                console.log("received token", received_tk.token);
+                localStorage.setItem('token', received_tk.token); //STORE THE TOKEN
+                localStorage.setItem('username', username); //STORE FOR USE LATER
+                setBadLogin("");
+                navigate('/DataDisplay')
+            } else {
+                console.log("Bad Login")
+                setBadLogin("Invalid username or password.");
+            }
+        } catch (error) {
+            console.log(error);
+            setBadLogin("Invalid username or password.");
+        }
     }
 
     return (

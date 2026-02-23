@@ -21,14 +21,6 @@ function NavBar() {
             }}>Login</button>
             <button className="button" onClick={(e) => {
                 e.preventDefault();
-                navigate("/Test1");
-            }}>Test1</button>
-            <button className="button" onClick={(e) => {
-                e.preventDefault();
-                navigate("/Test2");
-            }}>Test2</button>
-            <button className="button" onClick={(e) => {
-                e.preventDefault();
                 navigate("/DataDisplay");
             }}>DataDisplay</button>
             <button className="button" onClick={(e) => {

@@ -43,7 +43,54 @@ async function connectDB() {
 app.use(express.json()); //use json
 app.use(cors()); // Enable CORS for all routes
 
+//---------------JWT AUTH with token validation-----------------
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).send('Unauthorized');
+    }
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
+        req.user = decoded; //add user for next step to use
+        //we have verified token!
+        console.log("verified decoded token:", decoded);
+        next(); // move to next handler
+    } catch (err) {
+        res.status(403).send('Invalid token');
+    }
+};
+
 //------------------ROUTES-------------------------
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) {
+        return res.status(400).send("Username and password required");
+    }
+    //verify login from database of users
+    try {
+        console.log("log in attempt with:", username, password);
+        //does login info match?
+        const results = await db.collection("Logins").find({"username": username, "password": password}).toArray();
+        if (results.length > 0) { //found valid username/password combo?
+            //give token
+            const payload = {username};
+            const token = jwt.sign(payload, SECRET_KEY, {
+                expiresIn: '1h'
+            });
+            console.log("Granting Token...", token)
+            res.json({ token: token });
+        }
+        else {
+            res.status(400).send("Invalid Login");
+        }
+    }
+    catch(err) {
+        res.status(400).send("Database Error");
+    }
+})
+
 app.get("/api/data", async (req, res) => {
     try {
         const data = await db
