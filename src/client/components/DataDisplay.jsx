@@ -8,18 +8,26 @@ function Charts() {
     const [schoolYearData, setSchoolYearData] = useState([]);
     const [firstTen, setFirstTen] = useState([]);
 
-    useEffect(() => {
-        fetch("http://localhost:5000/api/chart/school-id-count")
-            .then(res => res.json())
-            .then(setSchoolIdData);
+    useEffect( () => {
+        const fetchAll = async () => {
+            try {
+                const res1 = await fetch("/api/chart/school-id-count")
+                const data1 = await res1.json();
+                console.log(data1);
+                setSchoolIdData(data1);
 
-        fetch("http://localhost:5000/api/chart/school-year-count")
-            .then(res => res.json())
-            .then(setSchoolYearData);
+                const res2 = await fetch("/api/chart/school-year-count");
+                const data2 = await res2.json();
+                setSchoolYearData(data2);
 
-        fetch("http://localhost:5000/api/chart/first-10-rows")
-            .then(res => res.json())
-            .then(setFirstTen);
+                const res3 = await fetch("/api/chart/first-10-rows");
+                const data3 = await res3.json();
+                setFirstTen(data3);
+            } catch (err) {
+                console.error("Failed to fetch data. Check if server is down or route is 404:", err);
+            }
+        };
+        const unusedVar = fetchAll();
     }, []);
 
     return (

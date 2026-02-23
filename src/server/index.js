@@ -1,33 +1,33 @@
-import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
-
-// Recreate __dirname in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Point to root .env
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
-
 import express from "express";
+import ViteExpress from "vite-express";
+import dotenv from "dotenv";
 import cors from "cors";
-import { MongoClient } from "mongodb";
+import {loadEnvFile} from "node:process";
+import { MongoClient, ServerApiVersion } from "mongodb";
+import jwt from "jsonwebtoken"
 
+loadEnvFile(".env");
 const app = express();
-const PORT = 5000;
+const port = process.env.PORT || 3000;
+const uri = process.env.MONGO_URI
+const SECRET_KEY = process.env.SECRET_KEY;
 
-app.use(cors());
-app.use(express.json());
-
-const client = new MongoClient(process.env.MONGO_URI);
-
+// console.log("uri:",uri)
+const client = new MongoClient(uri, {
+    serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+    }
+});
 let db;
 
 async function connectDB() {
     try {
         await client.connect();
         db = client.db("Webwware");  //YES THE CONTAINER IS ACTUALLY CALLED Webwware that's my fault and mongo won't let me rename without dropping all the data
-        console.log("Connected to MongoDB");
+        await client.db("admin").command({ ping: 1 })// send ping
+        console.log("Pinged deployment. Successfully connected to MongoDB!");
         // console.log("Using DB:", db.databaseName);
         // these comments are for Debugging and print Mongo Information into the webstorm terminal use if you need to see how I set up mongo or just ask me  - Ethan
         // const databases = await client.db().admin().listDatabases();
@@ -39,8 +39,11 @@ async function connectDB() {
     }
 }
 
-connectDB();
 
+app.use(express.json()); //use json
+app.use(cors()); // Enable CORS for all routes
+
+//------------------ROUTES-------------------------
 app.get("/api/data", async (req, res) => {
     try {
         const data = await db
@@ -56,45 +59,62 @@ app.get("/api/data", async (req, res) => {
 });
 
 app.get("/api/chart/school-id-count", async (req, res) => {
-    const data = await db.collection("Admission_Activity").aggregate([
-        {
-            $group: {
-                _id: "$SCHOOL_ID",
-                count: { $sum: 1 }
-            }
-        },
-        { $sort: { _id: 1 } }
-    ]).toArray();
+    try {
+        const data = await db.collection("Admission_Activity").aggregate([
+            {
+                $group: {
+                    _id: "$SCHOOL_ID",
+                    count: {$sum: 1}
+                }
+            },
+            {$sort: {_id: 1}}
+        ]).toArray();
 
-    res.json(data);
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 
 app.get("/api/chart/school-year-count", async (req, res) => {
-    const data = await db.collection("Admission_Activity").aggregate([
-        {
-            $group: {
-                _id: "$SCHOOL_YR_ID",
-                count: { $sum: 1 }
-            }
-        },
-        { $sort: { _id: 1 } }
-    ]).toArray();
+    try {
+        const data = await db.collection("Admission_Activity").aggregate([
+            {
+                $group: {
+                    _id: "$SCHOOL_YR_ID",
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { _id: 1 } }
+        ]).toArray();
 
-    res.json(data);
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 
 app.get("/api/chart/first-10-rows", async (req, res) => {
-    const data = await db
-        .collection("Admission_Activity")
-        .find({})
-        .limit(10)
-        .toArray();
+    try {
+        const data = await db
+            .collection("Admission_Activity")
+            .find({})
+            .limit(10)
+            .toArray();
 
-    res.json(data);
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+
 });
 
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-});
+async function startServer() {
+    await connectDB();
+    ViteExpress.listen(app, port, () => {
+        console.log("Server is listening on port", port);
+        console.log(`Client url: http://localhost:${port}`);    });
+}
+const server = startServer();
