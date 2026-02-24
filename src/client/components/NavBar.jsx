@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'; //react router
 function NavBar() {
     const navigate = useNavigate()
     const token = localStorage.getItem('token');
+    const username = localStorage.getItem('username');
     const isAdmin = localStorage.getItem('isAdmin') === "1";
 
     const handleLogOut = async (e) => {
@@ -25,6 +26,7 @@ function NavBar() {
 
             {token && (
                 <>
+                    <p className="mx-3">Welcome, {username}</p>
                     <button className="button" onClick={() => navigate("/DataDisplay")}>
                         DataDisplay
                     </button>
