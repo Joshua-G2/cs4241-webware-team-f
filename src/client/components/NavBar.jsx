@@ -4,33 +4,43 @@ import { useNavigate } from 'react-router-dom'; //react router
 
 
 function NavBar() {
-    const [isAdmin, setisAdmin] = useState(0);
     const navigate = useNavigate()
+    const token = localStorage.getItem('token');
+    const isAdmin = localStorage.getItem('isAdmin') === "1";
 
-    const handleClick = async (e) => {
-        e.preventDefault();
+    const handleLogOut = async (e) => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("username");
+        localStorage.removeItem("isAdmin");
 
-        navigate("/Test2") //swap page
+        navigate("/") //Return to login page
     }
 
     return (
         <div className="nav-bar">
-            <button className="button" onClick={(e) => {
-                e.preventDefault();
-                navigate("/");
-            }}>Login</button>
-            <button className="button" onClick={(e) => {
-                e.preventDefault();
-                navigate("/DataDisplay");
-            }}>DataDisplay</button>
-            <button className="button" onClick={(e) => {
-                e.preventDefault();
-                navigate("/Dashboards");
-            }}>Dashboards</button>
-            <button className="button" onClick={(e) => {
-                e.preventDefault();
-                navigate("/enrollment");
-            }}>Add Enrollment</button>
+            {!token && (
+                <button className="button" onClick={() => navigate("/")}>
+                    Login
+                </button>)}
+
+            {token && (
+                <>
+                    <button className="button" onClick={() => navigate("/DataDisplay")}>
+                        DataDisplay
+                    </button>
+                    <button className="button" onClick={() => navigate("/Dashboards")}>
+                        Dashboards
+                    </button>
+                    {isAdmin && (
+                        <button className="button" onClick={() => navigate("/enrollment")}>
+                            Add Enrollment
+                        </button>
+                    )}
+                    <button className="button" onClick={handleLogOut}>
+                        Logout
+                    </button>
+
+                </>)}
         </div>
     );
 }
