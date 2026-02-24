@@ -39,6 +39,7 @@ function Login() {
                 console.log("received token", received_tk.token);
                 localStorage.setItem('token', received_tk.token); //STORE THE TOKEN
                 localStorage.setItem('username', username); //STORE FOR USE LATER
+                localStorage.setItem("isAdmin", received_tk.isAdmin ? "1" : "0");
                 setBadLogin("");
                 navigate('/DataDisplay')
             } else {

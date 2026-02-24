@@ -1,25 +1,12 @@
-import { useState } from "react";
-// import "../   ... .css";
-import { useNavigate } from 'react-router-dom'; //react router
+import React from "react";
+import { Navigate } from "react-router-dom";
 
+export default function ProtectedRoute({ children }) {
+    const token = localStorage.getItem("token");
 
-
-function DataPrivacy() {
-    const [item, setItem] = useState("Item");
-    const navigate = useNavigate()
-
-    const handleClick = async (e) => {
-        e.preventDefault();
-
-        navigate("/") //swap page
+    if (!token) {
+        return <Navigate to="/" replace />;
     }
 
-    return (
-        <div>
-            <p>This is page data privacy!</p>
-            <button className="button" onClick={handleClick}>Swap</button>
-        </div>
-    );
+    return children;
 }
-
-export default DataPrivacy;

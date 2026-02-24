@@ -6,6 +6,7 @@ import DataDisplay from "./components/DataDisplay.jsx";
 import Dashboards from "./components/Dashboards.jsx";
 import Login from "./components/Login.jsx";
 import EnrollForm from "./components/EnrollForm.jsx";
+import ProtectedRoute from "./components/DataPrivacy.jsx";
 
 function App() {
   const [count, setCount] = useState(0)
@@ -15,9 +16,19 @@ function App() {
             <NavBar />
             <Routes>
                 <Route path="/" element={<Login/>} />
-                <Route path="/DataDisplay" element={<DataDisplay/>} />
-                <Route path="/Dashboards" element={<Dashboards/>} />
-                <Route path="/enrollment" element={<EnrollForm/>} />
+
+                <Route path="/DataDisplay" element={
+                    <ProtectedRoute>
+                    <DataDisplay/>
+                    </ProtectedRoute>}/>
+                <Route path="/Dashboards" element={
+                    <ProtectedRoute>
+                    <Dashboards/>
+                    </ProtectedRoute>} />
+                <Route path="/enrollment" element={
+                    <ProtectedRoute>
+                    <EnrollForm/>
+                    </ProtectedRoute>} />
             </Routes>
         </Router>
     );
