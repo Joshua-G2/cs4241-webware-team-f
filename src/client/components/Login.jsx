@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom'; //react router
 function Login() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [school, setSchool] = useState("");
+    const [suggestions, setSuggestions] = useState([]); //school suggestions as user types
     const navigate = useNavigate()
     let token = localStorage.getItem('token'); //store as global var
     const [badLogin, setBadLogin] = useState("");
@@ -12,6 +14,36 @@ function Login() {
     useEffect( () => {
         console.log("badLogin is now:", badLogin);
     }, [badLogin] );
+
+    useEffect( () => {
+        console.log("school is now:", school);
+        if (school.trim() === "") {
+            return; //empty
+        }
+
+        const namesOnly = suggestions.map((sel) => sel.NAME_TX);
+        console.log("namesOnly:", namesOnly);
+        if (namesOnly.includes(school)) {
+            setSuggestions([]);
+            return; //clicked on option, don't display that 1 result
+        }
+
+        //top 10 suggestions from database
+        const fetchSchoolSuggestions = async () => {
+            console.log("querying db:", school);
+            try {
+                const response = await fetch(`/api/login/schools?query=${encodeURIComponent(school)}`);
+                const schools = await response.json() //array
+                console.log(schools)
+                setSuggestions(schools);
+            } catch (error) {
+                console.error('Error fetching schools:', error);
+            }
+        }
+        fetchSchoolSuggestions().then()
+    }, [school] );
+
+
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -57,7 +89,7 @@ function Login() {
             <h2 className="subtext"> Please log in. </h2>
 
             <form id="login-form">
-                <h2> Login / Register </h2>
+                {/*<h2> Login </h2>*/}
                 <div>
                     <label htmlFor="username">Username: </label>
                     <input type="text" id="username" placeholder="Username" value={username} required onChange={
@@ -69,6 +101,26 @@ function Login() {
                     <input type="password" id="password" placeholder="Password" value={password} required onChange={
                         (e) => setPassword(e.target.value)
                     }/>
+                </div>
+                <div>
+                    <label htmlFor="school">School: </label>
+                    <input type="text" id="school" placeholder="Start Typing..." value={school} required onChange={
+                        (e) => setSchool(e.target.value)
+                    }/>
+                    <ul id="schools">
+                        {(suggestions.length > 0 && school.length > 0) ? //not empty?
+                            suggestions.map((suggestion, index) => (
+                            <li id="school-item"
+                                    key={suggestion._id || index}
+                                    // value={suggestion.NAME_TX}
+                                    onClick={(e) => {
+                                        setSchool(suggestion.NAME_TX)
+                                    }}>
+                                    {suggestion.NAME_TX}</li>
+                            ) ) : //if empty...
+                                <li>No Schools found</li>
+                        }
+                    </ul>
                 </div>
                 {badLogin && (
                     <p>{badLogin}</p>

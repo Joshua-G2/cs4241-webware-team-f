@@ -91,6 +91,36 @@ app.post('/login', async (req, res) => {
     }
 })
 
+app.get("/api/login/schools", async (req, res) => {
+    const searchTerm = req.query.query;
+    if (!searchTerm) { //nothing given
+        return res.json([]);
+    }
+    try {
+        console.log("db is searching for school with:", searchTerm);
+        const data = await db.collection("School").aggregate([
+            {
+                $match: {
+                    NAME_TX: {$regex: searchTerm, $options: "i"} //contains searchTerm?
+                }
+            },
+            {
+                $sort: {NAME_TX: 1}
+            },
+            {
+                $limit: 5
+            },
+            {
+              $project: {_id: 1, NAME_TX: 1},
+            }
+        ]).toArray();
+
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get("/api/data", async (req, res) => {
     try {
         const data = await db
