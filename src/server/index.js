@@ -188,6 +188,46 @@ app.get("/api/chart/first-10-rows", async (req, res) => {
 
 });
 
+app.post("/api/enrollment", async (req, res) => {
+    const formData = req.body;
+
+    const schools = await db.collection("School");
+    const school = await schools.findOne({NAME_TX: formData.school});
+    const schoolId = school.ID;
+
+
+
+    try {
+        const enrollmentAttrition = await db.collection("Enroll_Attrition");
+        const enroll_attrition_data = {
+            SCHOOL_ID: schoolId,
+            SCHOOL_YR_ID: formData.year,
+            STUDENTS_ADDED_DURING_YEAR: formData.studentsAdded,
+            STUDENTS_GRADUATED: formData.graduating,
+            EXCH_STUD_REPTS: formData.exchangeStudents,
+            STUD_DISS_WTHD: formData.dismissed,
+            STUD_NOT_INV: formData.notInvited,
+            STUD_NOT_RETURN: formData.notReturn,
+            GRADE_DEF_ID: formData.grade
+        };
+        console.log(enroll_attrition_data);
+        const insertAttrition = await enrollmentAttrition.insertOne(enroll_attrition_data);
+        const admissionEnrollment = await db.collection("Admission_Activity_Enrollment");
+        const admission_enrollment_data = {
+            SCHOOL_ID: schoolId,
+            SCHOOL_YR_ID: formData.year,
+            ENROLLMENT_TYPE_CD: "INQUIRIES",
+            GENDER: formData.gender,
+            NR_ENROLLED: formData.studentsAdded,
+        };
+        const insertAdmissionEnrollment = await admissionEnrollment.insertOne(admission_enrollment_data);
+        console.log(admission_enrollment_data);
+
+    } catch(error){
+        console.log("error:", error);
+    }
+})
+
 async function startServer() {
     await connectDB();
     ViteExpress.listen(app, port, () => {
