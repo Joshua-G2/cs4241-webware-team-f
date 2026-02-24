@@ -1,78 +1,321 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bar, Line } from "react-chartjs-2";
-import { enrollmentMock } from "../mockData/mockEnrollmentData.js";
 
-export default function EnrollmentDashboard() {
-    const [data, setData] = useState(enrollmentMock);
-    const [year, setYear] = useState(enrollmentMock.year);
+// Auth wrapper (NO hooks here)
+function authFetch(url, options = {}) {
+    const token = localStorage.getItem("token");
+    return fetch(url, {
+        ...options,
+        headers: {
+            ...(options.headers || {}),
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
+}
 
-    async function onYearChange(e) {
-        const y = Number(e.target.value);
-        setYear(y);
+export default function Dashboards() {
+    const navigate = useNavigate();
 
-        // Later replace with:
-        // const next = await fetch(`/api/enrollment/${y}`).then(r => r.json());
-        // setData(next);
+    // -------- state --------
+    const [years, setYears] = useState([]);     // [{ID, SCHOOL_YEAR}]
+    const [yearId, setYearId] = useState(null); // School_Year.ID
+    const [soc, setSoc] = useState(false);
+    const [benchmark, setBenchmark] = useState("region"); // mine | region | all
 
-        setData((prev) => ({ ...prev, year: y }));
-    }
+    const [schools, setSchools] = useState([]); // [{schoolId,name}]
+    const [schoolId, setSchoolId] = useState(null);
 
-    const years = data.trend?.years?.length ? data.trend.years : [2022, 2023, 2024];
+    const [payload, setPayload] = useState(null);
+    const [err, setErr] = useState("");
 
-    const barData = useMemo(() => ({
-        labels: data.attritionByGrade.map(r => r.gradeLabel),
-        datasets: [
-            { label: "Added", data: data.attritionByGrade.map(r => r.added) },
-            { label: "Not Returning", data: data.attritionByGrade.map(r => r.notReturning) },
-            { label: "Dismissed", data: data.attritionByGrade.map(r => r.dismissed) },
-        ],
-    }), [data]);
+    // -------- token guard --------
+    useEffect(() => {
+        const token = localStorage.getItem("token");
+        if (!token) navigate("/Login");
+    }, [navigate]);
 
-    const barOptions = {
-        responsive: true,
-        scales: { y: { beginAtZero: true } },
-        plugins: { legend: { position: "top" } },
-    };
+    // -------- load years + schools --------
+    useEffect(() => {
+        (async () => {
+            try {
+                setErr("");
 
-    const lineData = useMemo(() => ({
-        labels: data.trend.years,
-        datasets: [
-            { label: "My Added", data: data.trend.myAdded },
-            { label: "Peer Avg Added", data: data.trend.peerAvgAdded },
-        ],
-    }), [data]);
+                // years
+                const yRes = await authFetch("/api/lookups/years");
+                if (yRes.status === 401 || yRes.status === 403) {
+                    localStorage.removeItem("token");
+                    navigate("/Login");
+                    return;
+                }
+                const yJson = await yRes.json();
+                if (!yRes.ok) throw new Error(yJson.error || "Failed to load years");
+                setYears(yJson);
+                setYearId(yJson.at(-1)?.ID ?? null);
 
-    const lineOptions = {
-        responsive: true,
-        scales: { y: { beginAtZero: true } },
-        plugins: { legend: { position: "top" } },
-    };
+                // schools (simple list, no search needed)
+                const sRes = await authFetch("/api/lookups/schools?limit=10000");
+                if (sRes.status === 401 || sRes.status === 403) {
+                    localStorage.removeItem("token");
+                    navigate("/Login");
+                    return;
+                }
+                const sJson = await sRes.json();
+                if (!sRes.ok) throw new Error(sJson.error || "Failed to load schools");
+
+                // dedupe & sort by name
+                const byId = new Map();
+                for (const s of sJson) if (s?.schoolId != null && !byId.has(s.schoolId)) byId.set(s.schoolId, s);
+                const clean = Array.from(byId.values()).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+
+                setSchools(clean);
+                setSchoolId(clean[0]?.schoolId ?? null);
+            } catch (e) {
+                setErr(String(e.message || e));
+            }
+        })();
+    }, [navigate]);
+
+    // -------- load dashboard payload --------
+    useEffect(() => {
+        if (!yearId || !schoolId) return;
+
+        (async () => {
+            try {
+                setErr("");
+                setPayload(null);
+
+                const url =
+                    `/api/enrollment/dashboard` +
+                    `?schoolId=${schoolId}` +
+                    `&yearId=${yearId}` +
+                    `&soc=${soc ? 1 : 0}` +
+                    `&benchmark=${benchmark}`;
+
+                const res = await authFetch(url);
+
+                if (res.status === 401 || res.status === 403) {
+                    localStorage.removeItem("token");
+                    navigate("/Login");
+                    return;
+                }
+
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || "Failed to load dashboard");
+                setPayload(json);
+            } catch (e) {
+                setErr(String(e.message || e));
+            }
+        })();
+    }, [yearId, schoolId, soc, benchmark, navigate]);
+
+    // -------- KPIs (reduce) --------
+    const kpis = useMemo(() => {
+        if (!payload) return null;
+
+        const totals = payload.attritionByGrade.reduce(
+            (acc, r) => {
+                acc.added += Number(r.added || 0);
+                acc.graduated += Number(r.graduated || 0);
+                acc.dismissed += Number(r.dismissed || 0);
+                acc.notInvited += Number(r.notInvited || 0);
+                acc.notReturning += Number(r.notReturning || 0);
+                return acc;
+            },
+            { added: 0, graduated: 0, dismissed: 0, notInvited: 0, notReturning: 0 }
+        );
+
+        const denom = totals.added + totals.graduated + totals.dismissed + totals.notInvited + totals.notReturning;
+        const attritionRate = denom ? totals.notReturning / denom : 0;
+
+        return { totals, attritionRate };
+    }, [payload]);
+
+    // -------- chart: Attrition by grade (grouped) --------
+    const gradeBarData = useMemo(() => {
+        if (!payload) return null;
+
+        // SOC table doesn't use grade_def_id (always 0), so grade breakdown is not meaningful
+        // Sponsor confirmed this is intended. :contentReference[oaicite:4]{index=4}
+        if (payload.soc) return null;
+
+        const grouped = payload.attritionByGrade.reduce((acc, r) => {
+            const label = String(r.gradeLabel ?? "Unknown");
+            if (!acc[label]) acc[label] = { label, added: 0, notReturning: 0, dismissed: 0 };
+            acc[label].added += Number(r.added || 0);
+            acc[label].notReturning += Number(r.notReturning || 0);
+            acc[label].dismissed += Number(r.dismissed || 0);
+            return acc;
+        }, {});
+
+        const rows = Object.values(grouped);
+
+        const order = (label) => {
+            const l = label.toLowerCase();
+            if (l.includes("pre")) return 0;
+            if (l.includes("kinder")) return 1;
+            const m = label.match(/(\d+)/);
+            return m ? 2 + Number(m[1]) : 999;
+        };
+        rows.sort((a, b) => order(a.label) - order(b.label));
+
+        return {
+            labels: rows.map((r) => r.label),
+            datasets: [
+                { label: "Added", data: rows.map((r) => r.added) },
+                { label: "Not Returning", data: rows.map((r) => r.notReturning) },
+                { label: "Dismissed", data: rows.map((r) => r.dismissed) },
+            ],
+        };
+    }, [payload]);
+
+    // -------- chart: Enrollment by Type & Gender (stacked bar) --------
+    const enrollStackedData = useMemo(() => {
+        if (!payload) return null;
+
+        const grouped = payload.enrollmentActivity.reduce((acc, r) => {
+            const type = String(r.ENROLLMENT_TYPE_CD ?? "Unknown");
+            const gender = String(r.GENDER ?? "Unknown");
+            const key = `${type}__${gender}`;
+            if (!acc[key]) acc[key] = { type, gender, total: 0 };
+            acc[key].total += Number(r.NR_ENROLLED || 0);
+            return acc;
+        }, {});
+
+        const values = Object.values(grouped);
+        const types = [...new Set(values.map((v) => v.type))].sort();
+        const genders = [...new Set(values.map((v) => v.gender))].sort();
+
+        return {
+            labels: types,
+            datasets: genders.map((g) => ({
+                label: g,
+                stack: "gender",
+                data: types.map((t) => values.find((v) => v.type === t && v.gender === g)?.total ?? 0),
+            })),
+        };
+    }, [payload]);
+
+    const stackedOptions = useMemo(
+        () => ({
+            responsive: true,
+            scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } },
+        }),
+        []
+    );
+
+    // -------- chart: Added trend (line) --------
+    const trendLineData = useMemo(() => {
+        if (!payload) return null;
+        return {
+            labels: payload.trend.years,
+            datasets: [
+                { label: "My Added", data: payload.trend.myAdded },
+                { label: `Benchmark Added (${payload.benchmark})`, data: payload.trend.benchAdded },
+            ],
+        };
+    }, [payload]);
+
+    // -------- render --------
+    if (!years.length || !schools.length) return <div style={{ padding: 16 }}>Loading…</div>;
 
     return (
         <div style={{ padding: 16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                    <h2>Enrollment Dashboard</h2>
-                    <div>{data.mySchool.name}</div>
+            <h2 style={{ marginTop: 0 }}>Enrollment Dashboard</h2>
+
+            {/* Filters (required) */}
+            <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    School
+                    <select value={schoolId ?? ""} onChange={(e) => setSchoolId(Number(e.target.value))}>
+                        {schools.map((s) => (
+                            <option key={s.schoolId} value={s.schoolId}>
+                                {s.name} (ID {s.schoolId})
+                            </option>
+                        ))}
+                    </select>
+                </label>
+
+                <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    Year
+                    <select value={yearId ?? ""} onChange={(e) => setYearId(Number(e.target.value))}>
+                        {years.map((y) => (
+                            <option key={y.ID} value={y.ID}>
+                                {y.SCHOOL_YEAR}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+
+                <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    Peer Group
+                    <select value={benchmark} onChange={(e) => setBenchmark(e.target.value)}>
+                        <option value="mine">My School</option>
+                        <option value="region">My Region</option>
+                        <option value="all">All Schools</option>
+                    </select>
+                </label>
+
+                <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    SOC
+                    <input type="checkbox" checked={soc} onChange={(e) => setSoc(e.target.checked)} />
+                </label>
+            </div>
+
+            {payload && (
+                <div style={{ marginTop: 8, opacity: 0.8 }}>
+                    {payload.school.name} • Benchmark: {payload.benchmark} • Group size: {payload.benchmarkSchoolCount}
                 </div>
+            )}
 
-                <select value={year} onChange={onYearChange}>
-                    {years.map(y => <option key={y}>{y}</option>)}
-                </select>
-            </div>
+            {err && (
+                <div style={{ marginTop: 12, padding: 10, border: "1px solid #e7b6c2", borderRadius: 10, background: "#fff6f8", color: "crimson" }}>
+                    {err}
+                </div>
+            )}
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginTop: 16 }}>
-                <Kpi title="Added" value={data.totals.added} />
-                <Kpi title="Graduated" value={data.totals.graduated} />
-                <Kpi title="Dismissed" value={data.totals.dismissed} />
-                <Kpi title="Not Invited" value={data.totals.notInvited} />
-                <Kpi title="Not Returning" value={data.totals.notReturning} />
-            </div>
+            {!payload || !kpis ? (
+                <div style={{ marginTop: 16 }}>Loading dashboard…</div>
+            ) : (
+                <>
+                    {/* KPI tiles (required) */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 12, marginTop: 16 }}>
+                        <Kpi title="Added" value={kpis.totals.added} />
+                        <Kpi title="Graduated" value={kpis.totals.graduated} />
+                        <Kpi title="Dismissed" value={kpis.totals.dismissed} />
+                        <Kpi title="Not Invited" value={kpis.totals.notInvited} />
+                        <Kpi title="Not Returning" value={kpis.totals.notReturning} />
+                        <Kpi title="Attrition Rate" value={`${(kpis.attritionRate * 100).toFixed(1)}%`} />
+                    </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
-                <Bar data={barData} options={barOptions} />
-                <Line data={lineData} options={lineOptions} />
-            </div>
+                    {/* Charts (Chart.js, 2+ types required) */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
+                        {!payload.soc && gradeBarData && (
+                            <Card title="Attrition by Grade (Bar)">
+                                <Bar data={gradeBarData} options={{ responsive: true, scales: { y: { beginAtZero: true } } }} />
+                            </Card>
+                        )}
+
+                        <Card title="Enrollment by Type & Gender (Stacked Bar)">
+                            <Bar data={enrollStackedData} options={stackedOptions} />
+                        </Card>
+
+                        <Card title="Added Trend (Line)">
+                            <Line data={trendLineData} options={{ responsive: true, scales: { y: { beginAtZero: true } } }} />
+                        </Card>
+
+                        <Card title="Peer Group Totals (Aggregate)">
+                            <div style={{ display: "grid", gap: 6 }}>
+                                <div>Added: {payload.benchTotals.added}</div>
+                                <div>Graduated: {payload.benchTotals.graduated}</div>
+                                <div>Dismissed: {payload.benchTotals.dismissed}</div>
+                                <div>Not Invited: {payload.benchTotals.notInvited}</div>
+                                <div>Not Returning: {payload.benchTotals.notReturning}</div>
+                            </div>
+                        </Card>
+                    </div>
+                </>
+            )}
         </div>
     );
 }
@@ -80,8 +323,17 @@ export default function EnrollmentDashboard() {
 function Kpi({ title, value }) {
     return (
         <div style={{ padding: 12, border: "1px solid #ddd", borderRadius: 12 }}>
-            <div>{title}</div>
-            <div style={{ fontSize: 22 }}>{value}</div>
+            <div style={{ fontSize: 12, opacity: 0.8 }}>{title}</div>
+            <div style={{ fontSize: 22, fontWeight: 700 }}>{value}</div>
+        </div>
+    );
+}
+
+function Card({ title, children }) {
+    return (
+        <div style={{ padding: 12, border: "1px solid #ddd", borderRadius: 12 }}>
+            <h3 style={{ marginTop: 0 }}>{title}</h3>
+            {children}
         </div>
     );
 }
