@@ -75,7 +75,7 @@ app.post('/login', async (req, res) => {
         const results = await db.collection("Logins").find({"username": username, "password": password}).toArray();
         if (results.length > 0) { //found valid username/password combo?
             //give token
-            const isAdmin = results.isAdmin === "true";
+            const isAdmin = results[0].isAdmin;
             const payload = {username, isAdmin};
             const token = jwt.sign(payload, SECRET_KEY, {
                 expiresIn: '1h'

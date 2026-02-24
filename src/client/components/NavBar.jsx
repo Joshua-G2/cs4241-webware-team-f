@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom'; //react router
 
 
 function NavBar() {
-    //const [isAdmin, setisAdmin] = useState(false);
     const navigate = useNavigate()
     const token = localStorage.getItem('token');
     const isAdmin = localStorage.getItem('isAdmin') === "1";
@@ -32,15 +31,16 @@ function NavBar() {
                     <button className="button" onClick={() => navigate("/Dashboards")}>
                         Dashboards
                     </button>
+                    {isAdmin && (
+                        <button className="button" onClick={() => navigate("/enrollment")}>
+                            Add Enrollment
+                        </button>
+                    )}
                     <button className="button" onClick={handleLogOut}>
                         Logout
                     </button>
+
                 </>)}
-            {token && isAdmin && (
-                <button className="button" onClick={() => navigate("/enrollment")}>
-                    Add Enrollment
-                </button>
-            )}
         </div>
     );
 }
