@@ -4,46 +4,12 @@
 @reference "./index.css";
 
 .nav-bar {
-  @apply fixed top-0 left-0 right-0 z-50 flex justify-center items-center h-16 bg-gray-600 shadow-md;
-}
-
-.logo {
-  @apply h-[6em] p-[1.5em] transition-[filter] duration-300 will-change-[filter];
-}
-
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-
-/* React-specific hover color */
-.logo-react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-.card {
-  @apply p-[2em];
-}
-
-.read-the-docs {
-  @apply text-[#888];
-}
+  @apply fixed top-0 left-0 right-0 z-50 flex justify-center items-center h-16 bg-gray-600 shadow-md;}
 
 @layer base {
   #root {
-    @apply max-w-[1280px] mx-auto p-8 text-center;
+    @apply max-w-[1280px] mx-auto p-8 pt-16 text-center;
   }
-}
-
-/* Spin animation logic */
-@media (prefers-reduced-motion: no-preference) {
-  .animate-logo-spin {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-@keyframes logo-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
 
 /*ON LOGIN */
