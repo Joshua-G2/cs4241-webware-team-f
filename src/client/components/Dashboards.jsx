@@ -29,6 +29,9 @@ export default function Dashboards() {
     const [payload, setPayload] = useState(null);
     const [err, setErr] = useState("");
 
+    const isAdmin = localStorage.getItem("isAdmin") === "1";
+    const lockedSchoolId = Number(localStorage.getItem("schoolId"));
+
     // -------- token guard --------
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -69,7 +72,9 @@ export default function Dashboards() {
                 const clean = Array.from(byId.values()).sort((a, b) => String(a.name).localeCompare(String(b.name)));
 
                 setSchools(clean);
-                setSchoolId(clean[0]?.schoolId ?? null);
+                const storedSchoolId = Number(localStorage.getItem("schoolId"));
+                const match = clean.find((s) => Number(s.schoolId) === storedSchoolId);
+                setSchoolId(match?.schoolId ?? clean[0]?.schoolId ?? null);
             } catch (e) {
                 setErr(String(e.message || e));
             }
@@ -227,8 +232,9 @@ export default function Dashboards() {
             <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                 <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     School
-                    <select value={schoolId ?? ""} onChange={(e) => setSchoolId(Number(e.target.value))}>
-                        {schools.map((s) => (
+                    <select value={schoolId ?? ""} onChange={(e) => setSchoolId(Number(e.target.value))} disabled={!isAdmin}>
+                        {schools.filter((s) => isAdmin || Number(s.schoolId) === lockedSchoolId)
+                            .map((s) => (
                             <option key={s.schoolId} value={s.schoolId}>
                                 {s.name} (ID {s.schoolId})
                             </option>
