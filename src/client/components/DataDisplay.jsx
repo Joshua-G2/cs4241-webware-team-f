@@ -31,7 +31,7 @@ function Charts() {
     }, []);
 
     return (
-        <div>
+        <div className="page-layout">
             <h1> MONGO DATA: </h1>
             <h2>Count by School ID</h2>
             <ResponsiveContainer width="100%" height={300}>

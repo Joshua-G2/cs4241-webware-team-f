@@ -77,7 +77,7 @@ function Login() {
                 localStorage.setItem("school", school);
                 console.log(schoolId)
                 setBadLogin("");
-                navigate('/DataDisplay')
+                navigate('/Dashboards')
             } else {
                 console.log("Bad Login")
                 setBadLogin("Invalid username or password.");
@@ -89,11 +89,9 @@ function Login() {
     }
 
     return (
-        <div className="Login">
-            <h1 className="page-top"> Login </h1>
-            <h2 className="subtext"> Please log in. </h2>
-
-            <form id="login-form">
+        <div className="page-layout">
+            <h1> Login </h1>
+            <form className="content-box" id="login-form">
                 {/*<h2> Login </h2>*/}
                 <div>
                     <label htmlFor="username">Username: </label>
@@ -109,15 +107,26 @@ function Login() {
                 </div>
                 <div>
                     <label htmlFor="school">School: </label>
-                    <input type="text" id="school" placeholder="Start Typing..." value={school} required onChange={
-                        (e) => {
-                            setSchool(e.target.value);
-                            setSchoolId(null)
+                    <div className="relative flex flex-col w-full">
+
+                    </div>
+                    <input type="text"
+                           id="school"
+                           placeholder="Start Typing..."
+                           value={school}
+                           required
+                           autoComplete="off"
+                           onChange={
+                                (e) => {
+                                    setSchool(e.target.value);
+                                    setSchoolId(null)
                     }}/>
-                    <ul id="schools">
+                    {/*Show the schools after typing*/}
+                    {school.trim() !== "" && (
+                    <ul className="dropwdown-list" id="schools">
                         {(suggestions.length > 0 && school.length > 0) ? //not empty?
                             suggestions.map((suggestion, index) => (
-                            <li id="school-item"
+                            <li className="dropdown-item" id="school-item"
                                     key={suggestion._id || index}
                                     // value={suggestion.NAME_TX}
                                     onClick={(e) => {
@@ -128,10 +137,15 @@ function Login() {
                                     }}>
                                     {suggestion.NAME_TX}</li>
                             ) ) : //if empty...
-                                <li>No Schools found</li>
+                                <li className="no-results error-box">
+                                    <span>⚠️</span>
+                                    No Schools found
+                                </li>
                         }
                     </ul>
+                    )}
                 </div>
+
                 {badLogin && (
                     <p>{badLogin}</p>
                 )}

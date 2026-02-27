@@ -13,16 +13,20 @@
 }
 
 /*ON LOGIN */
-#school {
-  @apply relative max-w-md mx-auto mt-5 p-4 rounded-lg shadow-md;
-}
+/*#school {*/
+/*  @apply relative max-w-md mx-auto mt-5 p-4 rounded-lg shadow-md;*/
+/*}*/
 
 /* The label */
-#schools {
-  @apply block text-sm font-medium  mb-2;
-}
+/*#schools {*/
+/*  @apply block text-sm font-medium  mb-2;*/
+/*}*/
 
-#school-item {
-  @apply px-4 py-2 text-white cursor-pointer text-left
-  hover:bg-white hover:text-black transition-colors;
-}
+/*#school-item {*/
+/*  @apply px-4 py-2 text-white cursor-pointer text-left*/
+/*  hover:bg-white hover:text-black transition-colors;*/
+/*}*/
+
+/*#input-box {*/
+/*  @apply bg-gray-200 border border-gray-500 text-gray-900 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-gray-700*/
+/*}*/

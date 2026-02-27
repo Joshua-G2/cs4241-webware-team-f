@@ -222,15 +222,15 @@ export default function Dashboards() {
     }, [payload]);
 
     // -------- render --------
-    if (!years.length || !schools.length) return <div style={{ padding: 16 }}>Loading…</div>;
+    if (!years.length || !schools.length) return <div className="p-4">Loading…</div>;
 
     return (
-        <div style={{ padding: 16 }}>
-            <h2 style={{ marginTop: 0 }}>Enrollment Dashboard</h2>
+        <div className="page-layout">
+            <h1 className="mt-0">Enrollment Dashboard</h1>
 
             {/* Filters (required) */}
-            <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-                <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <div className="content-box flex flex-row flex-wrap items-center gap-6 mb-8">
+                <label className="flex items-center gap-2">
                     School
                     <select value={schoolId ?? ""} onChange={(e) => setSchoolId(Number(e.target.value))} disabled={!isAdmin}>
                         {schools.filter((s) => isAdmin || Number(s.schoolId) === lockedSchoolId)
@@ -242,7 +242,7 @@ export default function Dashboards() {
                     </select>
                 </label>
 
-                <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <label className="flex items-center gap-2">
                     Year
                     <select value={yearId ?? ""} onChange={(e) => setYearId(Number(e.target.value))}>
                         {years.map((y) => (
@@ -253,7 +253,7 @@ export default function Dashboards() {
                     </select>
                 </label>
 
-                <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <label className="flex items-center gap-2">
                     Peer Group
                     <select value={benchmark} onChange={(e) => setBenchmark(e.target.value)}>
                         <option value="mine">My School</option>
@@ -262,30 +262,32 @@ export default function Dashboards() {
                     </select>
                 </label>
 
-                <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    SOC
+                <label className="flex items-center gap-2">
+                    Students of Color (SOC)
                     <input type="checkbox" checked={soc} onChange={(e) => setSoc(e.target.checked)} />
                 </label>
             </div>
 
             {payload && (
-                <div style={{ marginTop: 8, opacity: 0.8 }}>
+
+                <div className="mt-2 opacity-80">
                     {payload.school.name} • Benchmark: {payload.benchmark} • Group size: {payload.benchmarkSchoolCount}
                 </div>
             )}
 
             {err && (
-                <div style={{ marginTop: 12, padding: 10, border: "1px solid #e7b6c2", borderRadius: 10, background: "#fff6f8", color: "crimson" }}>
-                    {err}
+            <div className="error-box">
+                    <span>⚠️</span>
+                    <span>{err}</span>
                 </div>
             )}
 
             {!payload || !kpis ? (
-                <div style={{ marginTop: 16 }}>Loading dashboard…</div>
+                <div className="mt-4">Loading dashboard…</div>
             ) : (
                 <>
                     {/* KPI tiles (required) */}
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 12, marginTop: 16 }}>
+                    <div className="grid grid-cols-6 gap-3 mt-4">
                         <Kpi title="Added" value={kpis.totals.added} />
                         <Kpi title="Graduated" value={kpis.totals.graduated} />
                         <Kpi title="Dismissed" value={kpis.totals.dismissed} />
@@ -295,7 +297,7 @@ export default function Dashboards() {
                     </div>
 
                     {/* Charts (Chart.js, 2+ types required) */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
+                    <div className="grid grid-cols-2 gap-4 mt-4">
                         {!payload.soc && gradeBarData && (
                             <Card title="Attrition by Grade (Bar)">
                                 <Bar data={gradeBarData} options={{ responsive: true, scales: { y: { beginAtZero: true } } }} />
@@ -311,7 +313,7 @@ export default function Dashboards() {
                         </Card>
 
                         <Card title="Peer Group Totals (Aggregate)">
-                            <div style={{ display: "grid", gap: 6 }}>
+                            <div className="grid gap-[6px]">
                                 <div>Added: {payload.benchTotals.added}</div>
                                 <div>Graduated: {payload.benchTotals.graduated}</div>
                                 <div>Dismissed: {payload.benchTotals.dismissed}</div>
@@ -328,17 +330,17 @@ export default function Dashboards() {
 
 function Kpi({ title, value }) {
     return (
-        <div style={{ padding: 12, border: "1px solid #ddd", borderRadius: 12 }}>
-            <div style={{ fontSize: 12, opacity: 0.8 }}>{title}</div>
-            <div style={{ fontSize: 22, fontWeight: 700 }}>{value}</div>
+        <div className="p-3 border border-[#ddd] rounded-xl">
+            <div className="text-[12px] opacity-80">{title}</div>
+            <div className="text-[22px] font-bold">{value}</div>
         </div>
     );
 }
 
 function Card({ title, children }) {
     return (
-        <div style={{ padding: 12, border: "1px solid #ddd", borderRadius: 12 }}>
-            <h3 style={{ marginTop: 0 }}>{title}</h3>
+        <div className="p-3 border border-[#ddd] rounded-xl">
+            <h3 className="mt-0">{title}</h3>
             {children}
         </div>
     );

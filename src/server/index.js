@@ -443,7 +443,7 @@ app.get("/api/enrollment/dashboard", authenticateToken, async (req, res) => {
 
         if (myAttrRows.length === 0) {
             return res.status(404).json({
-                error: `No attrition rows for schoolId=${schoolId} and yearId=${yearId}. Pick a school with data.`,
+                error: `No attrition rows for schoolId = ${schoolId} and yearId = ${yearId}. Please change selections above.`,
             });
         }
 

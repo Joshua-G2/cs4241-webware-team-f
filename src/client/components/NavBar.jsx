@@ -28,7 +28,7 @@ function NavBar() {
                 <>
                     <p className="mx-3">Welcome, {username}</p>
                     <button className="button" onClick={() => navigate("/DataDisplay")}>
-                        DataDisplay
+                        Test
                     </button>
                     <button className="button" onClick={() => navigate("/Dashboards")}>
                         Dashboards

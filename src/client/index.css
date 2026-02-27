@@ -12,6 +12,40 @@
     @apply bg-[#242424] text-white/85 antialiased;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
+
+    label {
+      @apply flex items-center justify-start gap-3 font-medium text-left;
+      /*@apply mb-1;*/
+    }
+
+    input{
+      @apply bg-gray-200 border border-gray-500 text-gray-900 rounded px-1 py-1 my-1;
+      @apply focus:outline-none focus:ring-2 focus:ring-gray-700 transition-all ;
+
+      &[type="number"] {
+        @apply w-20;
+      }
+      &[type="checkbox"] {
+        @apply p-0 appearance-none h-5 w-5 bg-gray-200 border border-gray-500 rounded
+        cursor-pointer transition-all relative inline-block align-middle;
+        @apply focus:outline-none focus:ring-2 focus:ring-gray-700;
+      }
+      &[type="checkbox"]:checked {
+        @apply bg-gray-700 border-gray-700;
+        /* custom checkmark using a data-uri background image */
+        background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+        background-size: 100% 100%;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+    }
+    select {
+      @apply cursor-pointer bg-gray-200 border border-gray-500 text-gray-900 rounded px-3 py-1
+      focus:outline-none focus:ring-2 focus:ring-gray-700 transition-all;
+    }
+    select:disabled {
+      @apply appearance-none cursor-not-allowed opacity-70;
+    }
   }
 
   /* Light mode override */
@@ -22,7 +56,7 @@
   }
 
   body {
-    @apply m-0 flex place-items-center min-w-[320px] min-h-screen;
+    @apply m-0 flex flex-col items-center min-w-[320px] min-h-screen;
   }
 
   a {
@@ -31,11 +65,13 @@
 
   h1 {
     @apply text-[3.2em] leading-[1.1];
+    @apply mb-6;
   }
 
   button {
-    @apply rounded-lg border border-transparent px-[1.2em] py-[0.6em] text-base font-medium
+    @apply rounded-lg border px-[1.2em] py-[0.6em] text-base font-medium
     bg-[#1a1a1a] cursor-pointer transition-[border-color] duration-250
+    border-gray-500
     hover:border-[#646cff] focus-visible:outline-4;
   }
 
@@ -47,5 +83,38 @@
     a:hover {
       @apply text-[#747bff];
     }
+  }
+}
+
+@layer utilities {
+  .page-layout {
+    @apply p-4 mx-auto max-w-7xl w-full;
+  }
+
+  /* nice box look */
+  .content-box {
+    @apply p-6 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm;
+  }
+
+  /*red error box*/
+  .error-box {
+    @apply p-4 rounded-lg font-medium flex items-center gap-2;
+    @apply border border-red-300 bg-red-50 text-red-700;
+    @apply dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400;
+  }
+
+  /*For School Search Dropdown*/
+  .dropdown-list {
+    @apply absolute z-10 w-full mt-1 max-h-60 overflow-auto;
+    @apply rounded-md shadow-lg list-none p-0;
+  }
+
+  .dropdown-item {
+    @apply px-4 py-2 cursor-pointer text-sm transition-colors;
+    @apply hover:bg-gray-100 dark:hover:bg-gray-700;
+  }
+
+  .no-results {
+    @apply px-4 py-2 text-sm transition-colors italic;
   }
 }
