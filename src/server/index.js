@@ -199,20 +199,38 @@ app.post("/api/enrollment", async (req, res) => {
 
 
     try {
-        const enrollmentAttrition = await db.collection("Enroll_Attrition");
-        const enroll_attrition_data = {
-            SCHOOL_ID: schoolId,
-            SCHOOL_YR_ID: formData.year,
-            STUDENTS_ADDED_DURING_YEAR: formData.studentsAdded,
-            STUDENTS_GRADUATED: formData.graduating,
-            EXCH_STUD_REPTS: formData.exchangeStudents,
-            STUD_DISS_WTHD: formData.dismissed,
-            STUD_NOT_INV: formData.notInvited,
-            STUD_NOT_RETURN: formData.notReturn,
-            GRADE_DEF_ID: formData.grade
-        };
-        console.log(enroll_attrition_data);
-        const insertAttrition = await enrollmentAttrition.insertOne(enroll_attrition_data);
+        if(!formData.soc) {
+            const enrollmentAttrition = await db.collection("Enroll_Attrition");
+            const enroll_attrition_data = {
+                SCHOOL_ID: schoolId,
+                SCHOOL_YR_ID: formData.year,
+                STUDENTS_ADDED_DURING_YEAR: formData.studentsAdded,
+                STUDENTS_GRADUATED: formData.graduating,
+                EXCH_STUD_REPTS: formData.exchangeStudents,
+                STUD_DISS_WTHD: formData.dismissed,
+                STUD_NOT_INV: formData.notInvited,
+                STUD_NOT_RETURN: formData.notReturn,
+                GRADE_DEF_ID: formData.grade
+            };
+            console.log(enroll_attrition_data);
+            const insertAttrition = await enrollmentAttrition.insertOne(enroll_attrition_data);
+        } else {
+            const enrollmentAttrition = await db.collection("Enroll_Attrition_Soc");
+            const enroll_attrition_data = {
+                SCHOOL_ID: schoolId,
+                SCHOOL_YR_ID: formData.year,
+                STUDENTS_ADDED_DURING_YEAR: formData.studentsAdded,
+                STUDENTS_GRADUATED: formData.graduating,
+                EXCH_STUD_REPTS: formData.exchangeStudents,
+                STUD_DISS_WTHD: formData.dismissed,
+                STUD_NOT_INV: formData.notInvited,
+                STUD_NOT_RETURN: formData.notReturn,
+                GRADE_DEF_ID: formData.grade
+            };
+            console.log(enroll_attrition_data);
+            const insertAttritionSoc = await enrollmentAttrition.insertOne(enroll_attrition_data);
+
+        }
         const admissionEnrollment = await db.collection("Admission_Activity_Enrollment");
         const admission_enrollment_data = {
             SCHOOL_ID: schoolId,
