@@ -26,9 +26,9 @@ function App() {
                     <Dashboards/>
                     </ProtectedRoute>} />
                 <Route path="/enrollment" element={
-                    <ProtectedRouteForm>
+                    <ProtectedRoute>
                     <EnrollForm/>
-                    </ProtectedRouteForm>} />
+                    </ProtectedRoute>} />
             </Routes>
         </Router>
     );
