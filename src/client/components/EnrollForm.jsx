@@ -62,7 +62,7 @@ function EnrollForm() {
 
 
         const enrollment_data = {
-            school: school,
+            school: Number(localStorage.getItem("schoolId")),
             year: Number(year),
             gender: gender,
             studentsAdded: Number(studentsAdded),
@@ -170,26 +170,6 @@ function EnrollForm() {
                     Is This Data For SOC {" : "}
                     <input type="checkbox" checked={soc} onChange={(e) => setSoc(e.target.checked)} className="h-4 w-4 rounded accent-gray-600"/>
                 </label><br/>
-                <div>
-                    <label htmlFor="school">School: </label>
-                    <input type="text" placeholder="Start Typing..." value={school} required onChange={
-                        (e) => setSchool(e.target.value)
-                    } className="bg-gray-200 border border-gray-500 text-gray-900 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-gray-700"/>
-                    <ul>
-                        {(suggestions.length > 0 && school.length > 0) ? //not empty?
-                            suggestions.map((suggestion, index) => (
-                                <li id="school-item"
-                                    key={suggestion._id || index}
-                                    // value={suggestion.NAME_TX}
-                                    onClick={(e) => {
-                                        setSchool(suggestion.NAME_TX)
-                                    }}>
-                                    {suggestion.NAME_TX}</li>
-                            ) ) : //if empty...
-                            <li>No Schools found</li>
-                        }
-                    </ul>
-                </div>
 
 
                 <button type="submit">Add Enrollment</button>
