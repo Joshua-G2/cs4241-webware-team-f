@@ -101,8 +101,7 @@ app.get("/api/login/schools", async (req, res) => {
         console.log("db is searching for school with:", searchTerm);
         const data = await db.collection("School").aggregate([
             {
-                $match: {
-                    NAME_TX: {$regex: searchTerm, $options: "i"} //contains searchTerm?
+                $match: {NAME_TX: {$regex: searchTerm, $options: "i"} //contains searchTerm?
                 }
             },
             {
@@ -112,7 +111,7 @@ app.get("/api/login/schools", async (req, res) => {
                 $limit: 5
             },
             {
-              $project: {_id: 1, NAME_TX: 1},
+              $project: {_id: 1, ID:1, NAME_TX: 1},
             }
         ]).toArray();
 

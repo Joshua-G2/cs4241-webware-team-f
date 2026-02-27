@@ -7,6 +7,7 @@ function Login() {
     const [password, setPassword] = useState("");
     const [school, setSchool] = useState("");
     const [suggestions, setSuggestions] = useState([]); //school suggestions as user types
+    const [schoolId, setSchoolId] = useState(null);
     const navigate = useNavigate()
     let token = localStorage.getItem('token'); //store as global var
     const [badLogin, setBadLogin] = useState("");
@@ -72,6 +73,9 @@ function Login() {
                 localStorage.setItem('token', received_tk.token); //STORE THE TOKEN
                 localStorage.setItem('username', username); //STORE FOR USE LATER
                 localStorage.setItem("isAdmin", received_tk.isAdmin ? "1" : "0");
+                localStorage.setItem("schoolId", String(schoolId ?? ""));
+                localStorage.setItem("school", school);
+                console.log(schoolId)
                 setBadLogin("");
                 navigate('/DataDisplay')
             } else {
@@ -106,8 +110,10 @@ function Login() {
                 <div>
                     <label htmlFor="school">School: </label>
                     <input type="text" id="school" placeholder="Start Typing..." value={school} required onChange={
-                        (e) => setSchool(e.target.value)
-                    }/>
+                        (e) => {
+                            setSchool(e.target.value);
+                            setSchoolId(null)
+                    }}/>
                     <ul id="schools">
                         {(suggestions.length > 0 && school.length > 0) ? //not empty?
                             suggestions.map((suggestion, index) => (
@@ -115,7 +121,10 @@ function Login() {
                                     key={suggestion._id || index}
                                     // value={suggestion.NAME_TX}
                                     onClick={(e) => {
+                                        console.log("suggestion:", suggestion)
                                         setSchool(suggestion.NAME_TX)
+                                        setSchoolId(suggestion.ID)
+                                        setSuggestions([])
                                     }}>
                                     {suggestion.NAME_TX}</li>
                             ) ) : //if empty...
