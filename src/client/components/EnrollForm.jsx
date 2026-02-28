@@ -24,8 +24,10 @@ function EnrollForm() {
         e.preventDefault();
         if(studentsAdded < 0 || graduating < 0 || exchangeStudents < 0 || dismissed < 0 || notInvited < 0 || notReturn < 0){
             alert("Every form item should be greater than or equal to 0 besides grade");
+            return;
         } else if(grade < 0 || grade > 13){
             alert("Grade must be between -1 and 12 (Pre-K-12)")
+            return;
         }
 
         const enrollment_data = {
@@ -50,9 +52,9 @@ function EnrollForm() {
         }).then(res => res.json())
             .then(data => {
                 console.log(data);
+                navigate("/Dashboards");
                 })
 
-        navigate("/Dashboards");
     }
 
     return (

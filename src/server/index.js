@@ -240,9 +240,11 @@ app.post("/api/enrollment", async (req, res) => {
         };
         const insertAdmissionEnrollment = await admissionEnrollment.insertOne(admission_enrollment_data);
         console.log(admission_enrollment_data);
+        res.status(201).json({ message: "Enrollment record created successfully" });
 
     } catch(error){
         console.log("error:", error);
+        res.status(500).json({ message: "Enrollment record failed" });
     }
 })
 
