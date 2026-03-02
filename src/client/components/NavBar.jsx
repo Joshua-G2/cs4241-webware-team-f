@@ -33,9 +33,11 @@ function NavBar() {
                     <button className="button" onClick={() => navigate("/Dashboards")}>
                         Dashboards
                     </button>
-                        <button className="button" onClick={() => navigate("/enrollment")}>
-                            Add Enrollment
-                        </button>
+                    {!isAdmin && (
+                            <button className="button" onClick={() => navigate("/enrollment")}>
+                                Add Enrollment
+                            </button>
+                        )}
                     <button className="button" onClick={handleLogOut}>
                         Logout
                     </button>

@@ -95,7 +95,7 @@ function EnrollForm() {
                 </label>
                 <label>
                     Graduating Students:
-                    <input type={"number"} requred name="added" onChange={(e) => setGraduating(e.target.value)} />
+                    <input type={"number"} required name="added" onChange={(e) => setGraduating(e.target.value)} />
                 </label>
                 <label>
                     Number of Exchange Students:
