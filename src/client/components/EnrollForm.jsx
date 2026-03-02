@@ -116,7 +116,7 @@ function EnrollForm() {
         <div className="page-layout">
             <h1> Add Enrollment Record</h1>
             {draftsShowing ? (
-                <div className="flex flex-col gap-2">
+                <div className="content-box flex flex-col gap-2">
                     {drafts.map((draft, index) => (
                         <button key={index} type="button" onClick={() => loadDraft(draft)} className="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded text-left">
                             Draft {index + 1} – {draft.created}
@@ -125,7 +125,7 @@ function EnrollForm() {
                     <button onClick={() => setDraftsShowing(false)} className="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">Back</button>
                 </div>
             ) : (
-                <form action="" method="POST" onSubmit={addEnrollmentRecord} className="max-w-2xl mx-auto flex flex-col gap-4">
+                <form action="" method="POST" onSubmit={addEnrollmentRecord} className="content-box max-w-2xl mx-auto flex flex-col gap-4">
                     <button type="button" onClick={showDrafts} className="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">Load Draft</button>
 
                     <div className="flex items-center gap-4">

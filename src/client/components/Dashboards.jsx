@@ -266,10 +266,10 @@ export default function Dashboards() {
 
     return (
         <div style={{ padding: 16 }}>
-            <h2 style={{ marginTop: 0 }}>Enrollment Dashboard</h2>
+            <h1 style={{ marginTop: 0 }}>Enrollment Dashboard</h1>
 
             {/* Filters */}
-            <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <div className="content-box flex gap-3 items-center flex-wrap">
                 <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     School
                     <select value={schoolId ?? ""} onChange={(e) => setSchoolId(Number(e.target.value))} disabled={!isAdmin}>
@@ -318,7 +318,7 @@ export default function Dashboards() {
             )}
 
             {noYears && (
-                <div style={{ marginTop: 12, padding: 10, border: "1px solid #ddd", borderRadius: 10 }}>
+                <div className="mt-3 p-[10px] border border-[#ddd] rounded-[10px]">
                     No years with data for this school (try a different school).
                 </div>
             )}
