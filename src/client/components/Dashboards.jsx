@@ -53,6 +53,9 @@ export default function Dashboards() {
     const [payload, setPayload] = useState(null);
     const [err, setErr] = useState("");
 
+    const isAdmin = localStorage.getItem("isAdmin") === "1";
+    const lockedSchoolID = Number(localStorage.getItem("schoolId"));
+
     // token guard
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -269,8 +272,8 @@ export default function Dashboards() {
             <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                 <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     School
-                    <select value={schoolId ?? ""} onChange={(e) => setSchoolId(Number(e.target.value))}>
-                        {schools.map((s) => (
+                    <select value={schoolId ?? ""} onChange={(e) => setSchoolId(Number(e.target.value))} disabled={!isAdmin}>
+                        {schools.filter((s) => isAdmin || Number(s.schoolId) === lockedSchoolID).map((s) => (
                             <option key={s.schoolId} value={s.schoolId}>
                                 {(s.name ?? `School ${s.schoolId}`)} (ID {s.schoolId})
                             </option>
