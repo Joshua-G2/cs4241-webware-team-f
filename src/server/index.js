@@ -190,44 +190,29 @@ app.get("/api/chart/first-10-rows", async (req, res) => {
 
 app.post("/api/enrollment", async (req, res) => {
     const formData = req.body;
-
-    const schools = await db.collection("School");
-    const school = await schools.findOne({NAME_TX: formData.school});
-    const schoolId = school.ID;
-
     try {
-        if(!formData.soc) {
-            const enrollmentAttrition = await db.collection("Enroll_Attrition");
-            const enroll_attrition_data = {
-                SCHOOL_ID: schoolId,
-                SCHOOL_YR_ID: formData.year,
-                STUDENTS_ADDED_DURING_YEAR: formData.studentsAdded,
-                STUDENTS_GRADUATED: formData.graduating,
-                EXCH_STUD_REPTS: formData.exchangeStudents,
-                STUD_DISS_WTHD: formData.dismissed,
-                STUD_NOT_INV: formData.notInvited,
-                STUD_NOT_RETURN: formData.notReturn,
-                GRADE_DEF_ID: formData.grade
-            };
-            console.log(enroll_attrition_data);
-            const insertAttrition = await enrollmentAttrition.insertOne(enroll_attrition_data);
-        } else {
-            const enrollmentAttrition = await db.collection("Enroll_Attrition_Soc");
-            const enroll_attrition_data = {
-                SCHOOL_ID: schoolId,
-                SCHOOL_YR_ID: formData.year,
-                STUDENTS_ADDED_DURING_YEAR: formData.studentsAdded,
-                STUDENTS_GRADUATED: formData.graduating,
-                EXCH_STUD_REPTS: formData.exchangeStudents,
-                STUD_DISS_WTHD: formData.dismissed,
-                STUD_NOT_INV: formData.notInvited,
-                STUD_NOT_RETURN: formData.notReturn,
-                GRADE_DEF_ID: formData.grade
-            };
-            console.log(enroll_attrition_data);
-            const insertAttritionSoc = await enrollmentAttrition.insertOne(enroll_attrition_data);
+        const schools = await db.collection("School");
+        const school = await schools.findOne({NAME_TX: formData.school});
+        const schoolId = school.ID;
 
-        }
+        const collectionName = formData.soc ? "Enroll_Attrition_Soc" : "Enroll_Attrition";
+        const admissionCollection = await db.collection(collectionName);
+
+        const enroll_attrition_data = {
+            SCHOOL_ID: schoolId,
+            SCHOOL_YR_ID: formData.year,
+            STUDENTS_ADDED_DURING_YEAR: formData.studentsAdded,
+            STUDENTS_GRADUATED: formData.graduating,
+            EXCH_STUD_REPTS: formData.exchangeStudents,
+            STUD_DISS_WTHD: formData.dismissed,
+            STUD_NOT_INV: formData.notInvited,
+            STUD_NOT_RETURN: formData.notReturn,
+            GRADE_DEF_ID: formData.grade
+        };
+        console.log(enroll_attrition_data);
+        const insertAttrition = await admissionCollection.insertOne(enroll_attrition_data);
+
+        //add to admission/enrollment table
         const admissionEnrollment = await db.collection("Admission_Activity_Enrollment");
         const admission_enrollment_data = {
             SCHOOL_ID: schoolId,
@@ -258,7 +243,7 @@ app.post("/api/admission", async (req, res) => {
         const admissionCollection = await db.collection(collectionName);
 
         //map data to database columns
-        //TODO SET UNUSED DB VALUES TO NULL
+        //TODO SET UNUSED DB VALUES TO NULL?
         const admission_data = {
             SCHOOL_ID: schoolId,
             SCHOOL_YR_ID: Number(formData.year),
