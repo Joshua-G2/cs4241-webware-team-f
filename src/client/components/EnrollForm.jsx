@@ -124,10 +124,10 @@ function EnrollForm() {
         <div className="page-layout">
             <h1> Add Enrollment Record</h1>
             {draftsShowing ? (
-                <div className="flex flex-col gap-2">
+                <div className="content-box flex flex-col gap-2">
                     {drafts.map((draft, index) => (
                         <div>
-                            <button key={index} type="button" onClick={() => loadDraft(draft)} className="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded text-left">
+                            <button key={index} type="button" onClick={() => loadDraft(draft)} className="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded text-left text-black">
                                 Draft {index + 1} – {draft.created}
                             </button>
                             {"  "}
@@ -136,11 +136,11 @@ function EnrollForm() {
                             </button>
                         </div>
                     ))}<br />
-                    <button onClick={() => setDraftsShowing(false)} className="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">Back</button>
+                    <button onClick={() => setDraftsShowing(false)} className="px-4 py-2">Back</button>
                 </div>
             ) : (
-                <form action="" method="POST" onSubmit={addEnrollmentRecord} className="max-w-2xl mx-auto flex flex-col gap-4">
-                    <button type="button" onClick={showDrafts} className="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">Load Draft</button>
+                <form action="" method="POST" onSubmit={addEnrollmentRecord} className="content-box max-w-2xl mx-auto flex flex-col gap-4">
+                    <button type="button" onClick={showDrafts} className="px-4 py-2">Load Draft</button>
 
                     <div className="flex items-center gap-4">
                         <label className="w-64">Your School:</label>
@@ -210,8 +210,8 @@ function EnrollForm() {
                     </div>
 
                     <div className="flex flex-col gap-2 mt-4">
-                        <button type="submit" className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">Add Enrollment</button>
-                        <button type="button" onClick={addDraftEnrollmentRecord} className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">Save Draft</button>
+                        <button type="submit" className="px-4 py-2">Add Enrollment</button>
+                        <button type="button" onClick={addDraftEnrollmentRecord} className="px-4 py-2 ">Save Draft</button>
                     </div>
                 </form>
             )}

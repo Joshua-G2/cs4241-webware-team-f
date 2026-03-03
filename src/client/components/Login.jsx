@@ -91,66 +91,79 @@ function Login() {
     return (
         <div className="page-layout">
             <h1> Login </h1>
-            <form className="content-box" id="login-form">
-                {/*<h2> Login </h2>*/}
-                <div>
-                    <label htmlFor="username">Username: </label>
-                    <input type="text" id="username" placeholder="Username" value={username} required onChange={
-                        (e) => setUsername(e.target.value)
-                    }/>
-                </div>
-                <div>
-                    <label htmlFor="password">Password: </label>
-                    <input type="password" id="password" placeholder="Password" value={password} required onChange={
-                        (e) => setPassword(e.target.value)
-                    }/>
-                </div>
-                <div>
-                    <label htmlFor="school">School: </label>
-                    <div className="relative flex flex-col w-full">
+            <form className="content-box flex flex-col items-center" id="login-form">
+                {/* 3x2 Grid Container */}
+                <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-4 items-center w-full max-w-md text-left">
+                    {/* Row 1: Username */}
+                    <label htmlFor="username" className="justify-start">Username:</label>
+                    <input
+                        type="text"
+                        id="username"
+                        placeholder="Username"
+                        value={username}
+                        required
+                        onChange={(e) => setUsername(e.target.value)}
+                    />
+                    {/* Row 2: Password */}
+                    <label htmlFor="password" className="justify-start">Password:</label>
+                    <input
+                        type="password"
+                        id="password"
+                        placeholder="Password"
+                        value={password}
+                        required
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
+                    {/* Row 3: School */}
+                    <label htmlFor="school" className="justify-start">School:</label>
+                    <div className="relative w-full">
+                        {/* Input is wrapped in a relative div so the dropdown anchors to it */}
+                        <input
+                            type="text"
+                            className="w-full"
+                            id="school"
+                            placeholder="Start Typing..."
+                            value={school}
+                            required
+                            autoComplete="off"
+                            onChange={(e) => {
+                                setSchool(e.target.value);
+                                setSchoolId(null);
+                            }}
+                        />
 
+                        {/* School Suggestions Dropdown */}
+                        {school.trim() !== "" && !suggestions.some(s => s.NAME_TX === school) && (
+                            <ul className="dropdown-list border border-gray-300 shadow-lg bg-white dark:bg-gray-800">
+                                {(suggestions.length > 0) ? (
+                                    suggestions.map((suggestion, index) => (
+                                        <li className="dropdown-item"
+                                            key={suggestion._id || index}
+                                            onClick={() => {
+                                                setSchool(suggestion.NAME_TX);
+                                                setSchoolId(suggestion.ID);
+                                                setSuggestions([]);
+                                            }}>
+                                            {suggestion.NAME_TX}
+                                        </li>
+                                    ))
+                                ) : (
+                                    <li className="no-results error-box text-xs">
+                                        <span>⚠️</span> No Schools found
+                                    </li>
+                                )}
+                            </ul>
+                        )}
                     </div>
-                    <input type="text"
-                           id="school"
-                           placeholder="Start Typing..."
-                           value={school}
-                           required
-                           autoComplete="off"
-                           onChange={
-                                (e) => {
-                                    setSchool(e.target.value);
-                                    setSchoolId(null)
-                    }}/>
-                    {/*Show the schools after typing*/}
-                    {school.trim() !== "" && (
-                    <ul className="dropwdown-list" id="schools">
-                        {(suggestions.length > 0 && school.length > 0) ? //not empty?
-                            suggestions.map((suggestion, index) => (
-                            <li className="dropdown-item" id="school-item"
-                                    key={suggestion._id || index}
-                                    // value={suggestion.NAME_TX}
-                                    onClick={(e) => {
-                                        console.log("suggestion:", suggestion)
-                                        setSchool(suggestion.NAME_TX)
-                                        setSchoolId(suggestion.ID)
-                                        setSuggestions([])
-                                    }}>
-                                    {suggestion.NAME_TX}</li>
-                            ) ) : //if empty...
-                                <li className="no-results error-box">
-                                    <span>⚠️</span>
-                                    No Schools found
-                                </li>
-                        }
-                    </ul>
-                    )}
                 </div>
-
+                {/* Error Message & Login Button */}
                 {badLogin && (
-                    <p>{badLogin}</p>
+                    <p className="error-box text-red-500 mt-4 font-medium">{badLogin}</p>
                 )}
-                <button className="button" id="login-button" onClick={handleLogin}>Login</button>
-                <p className="subtext"> * Note: There are no signups currently.</p>
+
+                <button className="button mt-6 w-full max-w-[200px]" id="login-button" onClick={handleLogin}>
+                    Login
+                </button>
             </form>
         </div>
     );

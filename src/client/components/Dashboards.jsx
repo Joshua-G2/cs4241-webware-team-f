@@ -2,7 +2,31 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bar, Line } from "react-chartjs-2";
 
-// Auth wrapper (NO hooks here)
+// ✅ Chart.js register (prevents blank page crashes)
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    PointElement,
+    LineElement,
+    Title,
+    Tooltip,
+    Legend,
+} from "chart.js";
+
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    PointElement,
+    LineElement,
+    Title,
+    Tooltip,
+    Legend
+);
+
+// Auth wrapper
 function authFetch(url, options = {}) {
     const token = localStorage.getItem("token");
     return fetch(url, {
@@ -17,46 +41,32 @@ function authFetch(url, options = {}) {
 export default function Dashboards() {
     const navigate = useNavigate();
 
-    // -------- state --------
-    const [years, setYears] = useState([]);     // [{ID, SCHOOL_YEAR}]
-    const [yearId, setYearId] = useState(null); // School_Year.ID
-    const [soc, setSoc] = useState(false);
-    const [benchmark, setBenchmark] = useState("region"); // mine | region | all
-
-    const [schools, setSchools] = useState([]); // [{schoolId,name}]
+    const [schools, setSchools] = useState([]);         // [{schoolId,name}]
     const [schoolId, setSchoolId] = useState(null);
+
+    const [yearsForSchool, setYearsForSchool] = useState([]); // [{ID,SCHOOL_YEAR}]
+    const [yearId, setYearId] = useState(null);
+
+    const [soc, setSoc] = useState(false);
+    const [benchmark, setBenchmark] = useState("mine"); // mine | region | all
 
     const [payload, setPayload] = useState(null);
     const [err, setErr] = useState("");
 
     const isAdmin = localStorage.getItem("isAdmin") === "1";
-    const lockedSchoolId = Number(localStorage.getItem("schoolId"));
+    const lockedSchoolID = Number(localStorage.getItem("schoolId"));
 
-    // -------- token guard --------
+    // token guard
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (!token) navigate("/Login");
     }, [navigate]);
 
-    // -------- load years + schools --------
+    // load schools once
     useEffect(() => {
         (async () => {
             try {
                 setErr("");
-
-                // years
-                const yRes = await authFetch("/api/lookups/years");
-                if (yRes.status === 401 || yRes.status === 403) {
-                    localStorage.removeItem("token");
-                    navigate("/Login");
-                    return;
-                }
-                const yJson = await yRes.json();
-                if (!yRes.ok) throw new Error(yJson.error || "Failed to load years");
-                setYears(yJson);
-                setYearId(yJson.at(-1)?.ID ?? null);
-
-                // schools (simple list, no search needed)
                 const sRes = await authFetch("/api/lookups/schools?limit=10000");
                 if (sRes.status === 401 || sRes.status === 403) {
                     localStorage.removeItem("token");
@@ -66,24 +76,55 @@ export default function Dashboards() {
                 const sJson = await sRes.json();
                 if (!sRes.ok) throw new Error(sJson.error || "Failed to load schools");
 
-                // dedupe & sort by name
+                // dedupe + sort
                 const byId = new Map();
                 for (const s of sJson) if (s?.schoolId != null && !byId.has(s.schoolId)) byId.set(s.schoolId, s);
-                const clean = Array.from(byId.values()).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+                const clean = Array.from(byId.values()).sort((a, b) =>
+                    String(a.name ?? `School ${a.schoolId}`).localeCompare(String(b.name ?? `School ${b.schoolId}`))
+                );
 
                 setSchools(clean);
-                const storedSchoolId = Number(localStorage.getItem("schoolId"));
-                const match = clean.find((s) => Number(s.schoolId) === storedSchoolId);
-                setSchoolId(match?.schoolId ?? clean[0]?.schoolId ?? null);
+                setSchoolId(clean[0]?.schoolId ?? null);
             } catch (e) {
                 setErr(String(e.message || e));
             }
         })();
     }, [navigate]);
 
-    // -------- load dashboard payload --------
+    // load years WITH data for this school (and SOC toggle)
     useEffect(() => {
-        if (!yearId || !schoolId) return;
+        if (!schoolId) return;
+
+        (async () => {
+            try {
+                setErr("");
+                const res = await authFetch(`/api/lookups/years-with-data?schoolId=${schoolId}&soc=${soc ? 1 : 0}`);
+                if (res.status === 401 || res.status === 403) {
+                    localStorage.removeItem("token");
+                    navigate("/Login");
+                    return;
+                }
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || "Failed to load years with data");
+
+                setYearsForSchool(json);
+
+                const validIds = new Set(json.map((y) => y.ID));
+                const newest = json.at(-1)?.ID ?? null;
+                if (!yearId || !validIds.has(yearId)) setYearId(newest);
+            } catch (e) {
+                setYearsForSchool([]);
+                setYearId(null);
+                setPayload(null);
+                setErr(String(e.message || e));
+            }
+        })();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [schoolId, soc, navigate]);
+
+    // load dashboard payload
+    useEffect(() => {
+        if (!schoolId || !yearId) return;
 
         (async () => {
             try {
@@ -98,23 +139,23 @@ export default function Dashboards() {
                     `&benchmark=${benchmark}`;
 
                 const res = await authFetch(url);
-
                 if (res.status === 401 || res.status === 403) {
                     localStorage.removeItem("token");
                     navigate("/Login");
                     return;
                 }
-
                 const json = await res.json();
                 if (!res.ok) throw new Error(json.error || "Failed to load dashboard");
+
                 setPayload(json);
             } catch (e) {
+                setPayload(null);
                 setErr(String(e.message || e));
             }
         })();
-    }, [yearId, schoolId, soc, benchmark, navigate]);
+    }, [schoolId, yearId, soc, benchmark, navigate]);
 
-    // -------- KPIs (reduce) --------
+    // KPIs
     const kpis = useMemo(() => {
         if (!payload) return null;
 
@@ -133,15 +174,76 @@ export default function Dashboards() {
         const denom = totals.added + totals.graduated + totals.dismissed + totals.notInvited + totals.notReturning;
         const attritionRate = denom ? totals.notReturning / denom : 0;
 
+        const netChange = totals.added - (totals.graduated + totals.dismissed + totals.notInvited + totals.notReturning);
+
+        return { totals, attritionRate, netChange };
+    }, [payload]);
+
+    const yoyAdded = useMemo(() => {
+        if (!payload?.trend?.years?.length) return { value: null, label: "" };
+
+        const years = payload.trend.years;      // labels
+        const my = payload.trend.myAdded || []; // numbers
+
+        // best-effort: use the selected year label from the dropdown
+        const selectedYearLabel = yearsForSchool.find((y) => y.ID === yearId)?.SCHOOL_YEAR;
+
+        // find index in trend array for that year label; fallback to last item
+        let i = years.findIndex((x) => String(x) === String(selectedYearLabel));
+        if (i === -1) i = years.length - 1;
+
+        if (i <= 0) return { value: null, label: String(years[i] ?? "") };
+
+        const cur = Number(my[i] ?? 0);
+        const prev = Number(my[i - 1] ?? 0);
+
+        return { value: cur - prev, label: String(years[i]) };
+    }, [payload, yearsForSchool, yearId]);
+
+    const benchKpis = useMemo(() => {
+        if (!payload) return null;
+
+        const t = payload.benchTotals || {};
+        const totals = {
+            added: Number(t.added || 0),
+            graduated: Number(t.graduated || 0),
+            dismissed: Number(t.dismissed || 0),
+            notInvited: Number(t.notInvited || 0),
+            notReturning: Number(t.notReturning || 0),
+        };
+
+        const denom =
+            totals.added +
+            totals.graduated +
+            totals.dismissed +
+            totals.notInvited +
+            totals.notReturning;
+
+        const attritionRate = denom ? totals.notReturning / denom : 0;
+
         return { totals, attritionRate };
     }, [payload]);
 
-    // -------- chart: Attrition by grade (grouped) --------
+// Top row summary numbers (my vs peer + delta)
+    const headline = useMemo(() => {
+        if (!kpis || !benchKpis || !payload) return null;
+
+        const mineRate = kpis.attritionRate;
+        const benchRate = benchKpis.attritionRate;
+        const diff = mineRate - benchRate;
+
+        return {
+            mineRate,
+            benchRate,
+            diff,
+            groupSize: Number(payload.benchmarkSchoolCount || 0),
+        };
+    }, [kpis, benchKpis, payload]);
+
+
+    // Attrition by grade (Bar) — hide when SOC
     const gradeBarData = useMemo(() => {
         if (!payload) return null;
-
-        // SOC table doesn't use grade_def_id (always 0), so grade breakdown is not meaningful
-        // Sponsor confirmed this is intended. :contentReference[oaicite:4]{index=4}
         if (payload.soc) return null;
 
         const grouped = payload.attritionByGrade.reduce((acc, r) => {
@@ -174,7 +276,7 @@ export default function Dashboards() {
         };
     }, [payload]);
 
-    // -------- chart: Enrollment by Type & Gender (stacked bar) --------
+    // Enrollment by type & gender (Stacked Bar)
     const enrollStackedData = useMemo(() => {
         if (!payload) return null;
 
@@ -209,7 +311,7 @@ export default function Dashboards() {
         []
     );
 
-    // -------- chart: Added trend (line) --------
+    // Trend (Line)
     const trendLineData = useMemo(() => {
         if (!payload) return null;
         return {
@@ -221,31 +323,36 @@ export default function Dashboards() {
         };
     }, [payload]);
 
-    // -------- render --------
-    if (!years.length || !schools.length) return <div className="p-4">Loading…</div>;
+    // render guards
+    if (!schools.length) return <div style={{ padding: 16 }}>Loading…</div>;
+
+    const noYears = schoolId && yearsForSchool.length === 0;
 
     return (
-        <div className="page-layout">
-            <h1 className="mt-0">Enrollment Dashboard</h1>
+        <div style={{ padding: 16 }}>
+            <h1 style={{ marginTop: 0 }}>Enrollment Dashboard</h1>
 
-            {/* Filters (required) */}
-            <div className="content-box flex flex-row flex-wrap items-center gap-6 mb-8">
-                <label className="flex items-center gap-2">
+            {/* Filters */}
+            <div className="content-box" style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", justifyContent: "center"}}>
+                <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     School
                     <select value={schoolId ?? ""} onChange={(e) => setSchoolId(Number(e.target.value))} disabled={!isAdmin}>
-                        {schools.filter((s) => isAdmin || Number(s.schoolId) === lockedSchoolId)
-                            .map((s) => (
+                        {schools.filter((s) => isAdmin || Number(s.schoolId) === lockedSchoolID).map((s) => (
                             <option key={s.schoolId} value={s.schoolId}>
-                                {s.name} (ID {s.schoolId})
+                                {(s.name ?? `School ${s.schoolId}`)} (ID {s.schoolId})
                             </option>
                         ))}
                     </select>
                 </label>
 
-                <label className="flex items-center gap-2">
+                <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     Year
-                    <select value={yearId ?? ""} onChange={(e) => setYearId(Number(e.target.value))}>
-                        {years.map((y) => (
+                    <select
+                        value={yearId ?? ""}
+                        onChange={(e) => setYearId(Number(e.target.value))}
+                        disabled={!yearsForSchool.length}
+                    >
+                        {yearsForSchool.map((y) => (
                             <option key={y.ID} value={y.ID}>
                                 {y.SCHOOL_YEAR}
                             </option>
@@ -253,7 +360,7 @@ export default function Dashboards() {
                     </select>
                 </label>
 
-                <label className="flex items-center gap-2">
+                <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     Peer Group
                     <select value={benchmark} onChange={(e) => setBenchmark(e.target.value)}>
                         <option value="mine">My School</option>
@@ -262,32 +369,75 @@ export default function Dashboards() {
                     </select>
                 </label>
 
-                <label className="flex items-center gap-2">
-                    Students of Color (SOC)
+                <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    SOC
                     <input type="checkbox" checked={soc} onChange={(e) => setSoc(e.target.checked)} />
                 </label>
             </div>
 
             {payload && (
-
-                <div className="mt-2 opacity-80">
+                <div style={{ marginTop: 8, opacity: 0.8 }}>
                     {payload.school.name} • Benchmark: {payload.benchmark} • Group size: {payload.benchmarkSchoolCount}
                 </div>
             )}
 
+            {noYears && (
+                <div style={{ marginTop: 12, padding: 10, border: "1px solid #ddd", borderRadius: 10 }}>
+                    No years with data for this school (try a different school).
+                </div>
+            )}
+
             {err && (
-            <div className="error-box">
-                    <span>⚠️</span>
-                    <span>{err}</span>
+                <div
+                    style={{
+                        marginTop: 12,
+                        padding: 10,
+                        border: "1px solid #e7b6c2",
+                        borderRadius: 10,
+                        background: "#fff6f8",
+                        color: "crimson",
+                    }}
+                >
+                    {err}
                 </div>
             )}
 
             {!payload || !kpis ? (
-                <div className="mt-4">Loading dashboard…</div>
+                <div style={{ marginTop: 16 }}>Loading dashboard…</div>
             ) : (
                 <>
-                    {/* KPI tiles (required) */}
-                    <div className="grid grid-cols-6 gap-3 mt-4">
+                    {/* Headline stats (readability row) */}
+                    {headline && (
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginTop: 16 }}>
+                            <Kpi
+                                title={`Peer Attrition Rate (${payload.benchmark})`}
+                                value={`${(headline.benchRate * 100).toFixed(1)}%`}
+                                sub={`Across ${headline.groupSize} schools`}
+                            />
+                            <Kpi
+                                title="My School Attrition vs Peers Attrition"
+                                value={`${(headline.diff * 100).toFixed(1)} pts`}
+                                sub={headline.diff < 0 ? "Lower than peers" : headline.diff > 0 ? "Higher than peers " : "Same as peers"}
+                            />
+                            <Kpi
+                                title={`Enrollment change (Added) vs previous year`}
+                                value={formatDelta(yoyAdded.value)}
+                                sub={yoyAdded.value == null ? "No previous year available" : `Selected year: ${yoyAdded.label}`}
+                            />
+                            <Kpi
+                                title="Net Enrollment Change"
+                                value={
+                                    kpis.netChange > 0
+                                        ? `+${kpis.netChange}`
+                                        : kpis.netChange
+                                }
+                                sub={`Selected year: ${yoyAdded.label}`}
+                            />
+                        </div>
+                    )}
+
+                    {/* KPI tiles */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 12, marginTop: 16 }}>
                         <Kpi title="Added" value={kpis.totals.added} />
                         <Kpi title="Graduated" value={kpis.totals.graduated} />
                         <Kpi title="Dismissed" value={kpis.totals.dismissed} />
@@ -296,8 +446,8 @@ export default function Dashboards() {
                         <Kpi title="Attrition Rate" value={`${(kpis.attritionRate * 100).toFixed(1)}%`} />
                     </div>
 
-                    {/* Charts (Chart.js, 2+ types required) */}
-                    <div className="grid grid-cols-2 gap-4 mt-4">
+                    {/* Charts */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
                         {!payload.soc && gradeBarData && (
                             <Card title="Attrition by Grade (Bar)">
                                 <Bar data={gradeBarData} options={{ responsive: true, scales: { y: { beginAtZero: true } } }} />
@@ -313,7 +463,7 @@ export default function Dashboards() {
                         </Card>
 
                         <Card title="Peer Group Totals (Aggregate)">
-                            <div className="grid gap-[6px]">
+                            <div style={{ display: "grid", gap: 6 }}>
                                 <div>Added: {payload.benchTotals.added}</div>
                                 <div>Graduated: {payload.benchTotals.graduated}</div>
                                 <div>Dismissed: {payload.benchTotals.dismissed}</div>
@@ -328,20 +478,26 @@ export default function Dashboards() {
     );
 }
 
-function Kpi({ title, value }) {
+function Kpi({ title, value, sub }) {
     return (
-        <div className="p-3 border border-[#ddd] rounded-xl">
-            <div className="text-[12px] opacity-80">{title}</div>
-            <div className="text-[22px] font-bold">{value}</div>
+        <div className="content-box hover:border-[#646cff] transition-colors duration-200">
+            <div style={{ fontSize: 12, opacity: 0.8 }}>{title}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.1 }}>{value}</div>
+            {sub ? <div style={{ marginTop: 6, fontSize: 12, opacity: 0.7 }}>{sub}</div> : null}
         </div>
     );
 }
-
 function Card({ title, children }) {
     return (
-        <div className="p-3 border border-[#ddd] rounded-xl">
-            <h3 className="mt-0">{title}</h3>
+        <div className="content-box hover:border-[#646cff] transition-colors duration-200">
+            <h3 style={{ marginTop: 0 }}>{title}</h3>
             {children}
         </div>
     );
+}
+function formatDelta(n) {
+    if (n === null || n === undefined) return "—";
+    const num = Number(n);
+    const sign = num > 0 ? "+" : "";
+    return `${sign}${num}`;
 }

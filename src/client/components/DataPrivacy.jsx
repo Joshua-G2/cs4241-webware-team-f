@@ -11,15 +11,12 @@ export default function ProtectedRoute({ children }) {
     return children;
 }
 
-export function ProtectedRouteForm({ children }) {
+export function ProtectedEnrollmentRoute({ children }) {
     const token = localStorage.getItem("token");
-    const isAdmin = localStorage.getItem("isAdmin") === "true";
+    const isAdmin = localStorage.getItem("isAdmin") === "1";
 
-    if(!token) return <Navigate to="/" replace />;
-
-    if (!isAdmin) {
-        return <Navigate to="/Dashboards" replace />;
-    }
+    if (isAdmin) return <Navigate to="/Dashboards" replace />;
+    if (!token) return <Navigate to="/" replace />;
 
     return children;
 }

@@ -390,6 +390,46 @@ app.get("/api/lookups/schools-with-attrition", authenticateToken, async (req, re
 });
 
 /**
+ * GET /api/lookups/years-with-data?schoolId=13&soc=0
+ * Returns: [{ ID, SCHOOL_YEAR }] ONLY for years that have attrition rows for that school
+ * Protected
+ */
+app.get("/api/lookups/years-with-data", authenticateToken, async (req, res) => {
+    try {
+        const schoolId = Number(req.query.schoolId);
+        const soc = String(req.query.soc ?? "0") === "1";
+
+        if (!Number.isFinite(schoolId)) {
+            return res.status(400).json({ error: "schoolId is required" });
+        }
+
+        const attrCol = db.collection(
+            soc ? COLLECTIONS_DASH.ENROLL_ATTRITION_SOC : COLLECTIONS_DASH.ENROLL_ATTRITION
+        );
+
+        // Stable API friendly: get yearIds via $group (instead of distinct)
+        const yearIdRows = await attrCol
+            .aggregate([
+                { $match: { SCHOOL_ID: schoolId } },
+                { $group: { _id: "$SCHOOL_YR_ID" } },
+            ])
+            .toArray();
+
+        const yearIds = yearIdRows.map((r) => r._id).filter((v) => v != null);
+
+        const years = await db
+            .collection(COLLECTIONS_DASH.SCHOOL_YEAR)
+            .find({ ID: { $in: yearIds } }, { projection: { _id: 0, ID: 1, SCHOOL_YEAR: 1 } })
+            .sort({ SCHOOL_YEAR: 1 })
+            .toArray();
+
+        return res.json(years);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+/**
  * GET /api/enrollment/dashboard?schoolId=10&yearId=33&soc=0&benchmark=mine|region|all
  * Returns:
  *  - KPIs based on Enroll_Attrition (your fields)
