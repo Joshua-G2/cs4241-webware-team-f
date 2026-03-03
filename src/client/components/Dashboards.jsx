@@ -174,8 +174,72 @@ export default function Dashboards() {
         const denom = totals.added + totals.graduated + totals.dismissed + totals.notInvited + totals.notReturning;
         const attritionRate = denom ? totals.notReturning / denom : 0;
 
+        const netChange = totals.added - (totals.graduated + totals.dismissed + totals.notInvited + totals.notReturning);
+
+        return { totals, attritionRate, netChange };
+    }, [payload]);
+
+    const yoyAdded = useMemo(() => {
+        if (!payload?.trend?.years?.length) return { value: null, label: "" };
+
+        const years = payload.trend.years;      // labels
+        const my = payload.trend.myAdded || []; // numbers
+
+        // best-effort: use the selected year label from the dropdown
+        const selectedYearLabel = yearsForSchool.find((y) => y.ID === yearId)?.SCHOOL_YEAR;
+
+        // find index in trend array for that year label; fallback to last item
+        let i = years.findIndex((x) => String(x) === String(selectedYearLabel));
+        if (i === -1) i = years.length - 1;
+
+        if (i <= 0) return { value: null, label: String(years[i] ?? "") };
+
+        const cur = Number(my[i] ?? 0);
+        const prev = Number(my[i - 1] ?? 0);
+
+        return { value: cur - prev, label: String(years[i]) };
+    }, [payload, yearsForSchool, yearId]);
+
+    const benchKpis = useMemo(() => {
+        if (!payload) return null;
+
+        const t = payload.benchTotals || {};
+        const totals = {
+            added: Number(t.added || 0),
+            graduated: Number(t.graduated || 0),
+            dismissed: Number(t.dismissed || 0),
+            notInvited: Number(t.notInvited || 0),
+            notReturning: Number(t.notReturning || 0),
+        };
+
+        const denom =
+            totals.added +
+            totals.graduated +
+            totals.dismissed +
+            totals.notInvited +
+            totals.notReturning;
+
+        const attritionRate = denom ? totals.notReturning / denom : 0;
+
         return { totals, attritionRate };
     }, [payload]);
+
+// Top row summary numbers (my vs peer + delta)
+    const headline = useMemo(() => {
+        if (!kpis || !benchKpis || !payload) return null;
+
+        const mineRate = kpis.attritionRate;
+        const benchRate = benchKpis.attritionRate;
+        const diff = mineRate - benchRate;
+
+        return {
+            mineRate,
+            benchRate,
+            diff,
+            groupSize: Number(payload.benchmarkSchoolCount || 0),
+        };
+    }, [kpis, benchKpis, payload]);
+
 
     // Attrition by grade (Bar) — hide when SOC
     const gradeBarData = useMemo(() => {
@@ -269,7 +333,7 @@ export default function Dashboards() {
             <h2 style={{ marginTop: 0 }}>Enrollment Dashboard</h2>
 
             {/* Filters */}
-            <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", justifyContent: "center"}}>
                 <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     School
                     <select value={schoolId ?? ""} onChange={(e) => setSchoolId(Number(e.target.value))} disabled={!isAdmin}>
@@ -342,6 +406,36 @@ export default function Dashboards() {
                 <div style={{ marginTop: 16 }}>Loading dashboard…</div>
             ) : (
                 <>
+                    {/* Headline stats (readability row) */}
+                    {headline && (
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginTop: 16 }}>
+                            <Kpi
+                                title={`Peer Attrition Rate (${payload.benchmark})`}
+                                value={`${(headline.benchRate * 100).toFixed(1)}%`}
+                                sub={`Across ${headline.groupSize} schools`}
+                            />
+                            <Kpi
+                                title="My School Attrition vs Peers Attrition"
+                                value={`${(headline.diff * 100).toFixed(1)} pts`}
+                                sub={headline.diff < 0 ? "Lower than peers" : headline.diff > 0 ? "Higher than peers " : "Same as peers"}
+                            />
+                            <Kpi
+                                title={`Enrollment change (Added) vs previous year`}
+                                value={formatDelta(yoyAdded.value)}
+                                sub={yoyAdded.value == null ? "No previous year available" : `Selected year: ${yoyAdded.label}`}
+                            />
+                            <Kpi
+                                title="Net Enrollment Change"
+                                value={
+                                    kpis.netChange > 0
+                                        ? `+${kpis.netChange}`
+                                        : kpis.netChange
+                                }
+                                sub={`Selected year: ${yoyAdded.label}`}
+                            />
+                        </div>
+                    )}
+
                     {/* KPI tiles */}
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 12, marginTop: 16 }}>
                         <Kpi title="Added" value={kpis.totals.added} />
@@ -384,15 +478,15 @@ export default function Dashboards() {
     );
 }
 
-function Kpi({ title, value }) {
+function Kpi({ title, value, sub }) {
     return (
-        <div style={{ padding: 12, border: "1px solid #ddd", borderRadius: 12 }}>
+        <div style={{ padding: 12, border: "1px solid #ddd", borderRadius: 12, background: "white" }}>
             <div style={{ fontSize: 12, opacity: 0.8 }}>{title}</div>
-            <div style={{ fontSize: 22, fontWeight: 700 }}>{value}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.1 }}>{value}</div>
+            {sub ? <div style={{ marginTop: 6, fontSize: 12, opacity: 0.7 }}>{sub}</div> : null}
         </div>
     );
 }
-
 function Card({ title, children }) {
     return (
         <div style={{ padding: 12, border: "1px solid #ddd", borderRadius: 12 }}>
@@ -400,4 +494,10 @@ function Card({ title, children }) {
             {children}
         </div>
     );
+}
+function formatDelta(n) {
+    if (n === null || n === undefined) return "—";
+    const num = Number(n);
+    const sign = num > 0 ? "+" : "";
+    return `${sign}${num}`;
 }
