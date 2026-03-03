@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *)); /* CHECK TOGGLE NOT USER FOR DARK MDOE */
 
 @tailwind utilities;
 
@@ -9,81 +10,93 @@
     font-weight: 400;
     color-scheme: light dark;
     /* Using Tailwind's colors or hex for the dark/light toggle */
-    @apply bg-[#242424] text-white/85 antialiased;
+    @apply bg-gray-100 text-[#213547] antialiased;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
-
-    label {
-      @apply flex items-center justify-start gap-3 font-medium text-left;
-      /*@apply mb-1;*/
-    }
-
-    input{
-      @apply bg-gray-200 border border-gray-500 text-gray-900 rounded px-1 py-1 my-1;
-      @apply focus:outline-none focus:ring-2 focus:ring-gray-700 transition-all ;
-
-      &[type="number"] {
-        @apply w-20;
-      }
-      &[type="checkbox"] {
-        @apply p-0 appearance-none h-5 w-5 bg-gray-200 border border-gray-500 rounded
-        cursor-pointer transition-all relative inline-block align-middle;
-        @apply focus:outline-none focus:ring-2 focus:ring-gray-700;
-      }
-      &[type="checkbox"]:checked {
-        @apply bg-gray-700 border-gray-700;
-        /* custom checkmark using a data-uri background image */
-        background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
-        background-size: 100% 100%;
-        background-position: center;
-        background-repeat: no-repeat;
-      }
-    }
-    select {
-      @apply cursor-pointer bg-gray-200 border border-gray-500 text-gray-900 rounded px-3 py-1
-      focus:outline-none focus:ring-2 focus:ring-gray-700 transition-all;
-    }
-    select:disabled {
-      @apply appearance-none cursor-not-allowed opacity-70;
-    }
   }
 
-  /* Light mode override */
-  @media (prefers-color-scheme: light) {
-    :root {
-      @apply bg-white text-[#213547];
+  /*MAKES DARK TOGGLE WORK*/
+  :root.dark {
+    color-scheme: dark;
+    @apply bg-[#242424] text-white/85;
+  }
+
+  label {
+    @apply flex items-center justify-start gap-3 font-medium text-left;
+    /*@apply mb-1;*/
+  }
+
+  input{
+    @apply bg-gray-200 border border-gray-500 text-gray-900 rounded px-1 py-1 my-1;
+    @apply focus:outline-none focus:ring-2 focus:ring-gray-700 transition-all ;
+    @apply hover:border-[#646cff] transition-colors duration-200;
+
+    @apply dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-[#646cff];
+
+    &[type="number"] {
+      @apply w-20;
     }
+    &[type="checkbox"] {
+      @apply p-0 appearance-none h-5 w-5 bg-gray-200 border border-gray-500 rounded
+      cursor-pointer transition-all relative inline-block align-middle;
+      @apply focus:outline-none focus:ring-2 focus:ring-gray-700;
+
+      @apply dark:bg-gray-700 dark:border-gray-600;
+    }
+    &[type="checkbox"]:checked {
+      @apply bg-gray-700 border-gray-700;
+      /* custom checkmark using a data-uri background image */
+      background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+      background-size: 100% 100%;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+  }
+  select {
+    @apply cursor-pointer bg-gray-200 border border-gray-500 text-gray-900 rounded px-3 py-1
+    focus:outline-none focus:ring-2 focus:ring-gray-700 transition-all;
+    @apply hover:border-[#646cff] transition-colors duration-200;
+
+    @apply dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200;
+    @apply dark:focus:ring-[#646cff];
+  }
+  select:disabled {
+    @apply appearance-none cursor-not-allowed opacity-70;
   }
 
   body {
     @apply m-0 flex flex-col items-center min-w-[320px] min-h-screen;
   }
-
   a {
     @apply font-medium text-[#646cff] no-underline hover:text-[#535bf2];
   }
-
+  a:hover {
+    @apply text-[#747bff];
+  }
   h1 {
     @apply text-[3.2em] leading-[1.1];
     @apply mb-6;
   }
 
-  button {
-    @apply rounded-lg border px-[1.2em] py-[0.6em] text-base font-medium
-    bg-[#1a1a1a] cursor-pointer transition-[border-color] duration-250
-    border-gray-500
-    hover:border-[#646cff] focus-visible:outline-4;
+  /* default (light mode) button styles */
+  .nav-button {
+    @apply cursor-pointer rounded-lg bg-transparent border-none px-[1.2em] py-[0.6em] text-base font-medium text-gray-900 transition-colors;
+    /*dark mode override*/
+    @apply dark:text-white/90;
+  }
+  button:not(.nav-button) {
+    @apply cursor-pointer rounded-lg border px-[1.2em] py-[0.6em] text-base font-medium transition-all;
+    @apply bg-slate-800 border-slate-700 text-white shadow-sm hover:bg-slate-700;
+    @apply hover:border-[#646cff] transition-colors duration-200;
+    @apply dark:focus:ring-[#646cff];
+
+    /*@apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#646cff];*/
+
+    /*dark mode override*/
+    @apply dark:bg-gray-700
+    /*@apply hover:border-[#646cff] hover:bg-gray-600 hover:shadow-[0_0_15px_rgba(100,108,255,0.3)];*/
   }
 
-  /* Specific dark/light button logic */
-  @media (prefers-color-scheme: light) {
-    button {
-      @apply bg-[#f9f9f9];
-    }
-    a:hover {
-      @apply text-[#747bff];
-    }
-  }
 }
 
 @layer utilities {
@@ -93,7 +106,7 @@
 
   /* nice box look */
   .content-box {
-    @apply p-6 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm;
+    @apply p-6 bg-white dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md;
   }
 
   /*red error box*/

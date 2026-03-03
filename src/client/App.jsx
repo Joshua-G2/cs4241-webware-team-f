@@ -6,6 +6,7 @@ import DataDisplay from "./components/DataDisplay.jsx";
 import Dashboards from "./components/Dashboards.jsx";
 import Login from "./components/Login.jsx";
 import EnrollForm from "./components/EnrollForm.jsx";
+import AdmissionForm from "./components/AdmissionForm.jsx";
 import ProtectedRoute,{ProtectedEnrollmentRoute} from "./components/DataPrivacy.jsx";
 
 function App() {
@@ -28,6 +29,10 @@ function App() {
                 <Route path="/enrollment" element={
                     <ProtectedEnrollmentRoute>
                     <EnrollForm/>
+                    </ProtectedEnrollmentRoute>} />
+                <Route path="/admissions" element={
+                    <ProtectedEnrollmentRoute>
+                        <AdmissionForm/>
                     </ProtectedEnrollmentRoute>} />
             </Routes>
         </Router>

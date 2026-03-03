@@ -330,10 +330,10 @@ export default function Dashboards() {
 
     return (
         <div style={{ padding: 16 }}>
-            <h2 style={{ marginTop: 0 }}>Enrollment Dashboard</h2>
+            <h1 style={{ marginTop: 0 }}>Enrollment Dashboard</h1>
 
             {/* Filters */}
-            <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", justifyContent: "center"}}>
+            <div className="content-box" style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", justifyContent: "center"}}>
                 <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     School
                     <select value={schoolId ?? ""} onChange={(e) => setSchoolId(Number(e.target.value))} disabled={!isAdmin}>
@@ -480,7 +480,7 @@ export default function Dashboards() {
 
 function Kpi({ title, value, sub }) {
     return (
-        <div style={{ padding: 12, border: "1px solid #ddd", borderRadius: 12, background: "white" }}>
+        <div className="content-box hover:border-[#646cff] transition-colors duration-200">
             <div style={{ fontSize: 12, opacity: 0.8 }}>{title}</div>
             <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.1 }}>{value}</div>
             {sub ? <div style={{ marginTop: 6, fontSize: 12, opacity: 0.7 }}>{sub}</div> : null}
@@ -489,7 +489,7 @@ function Kpi({ title, value, sub }) {
 }
 function Card({ title, children }) {
     return (
-        <div style={{ padding: 12, border: "1px solid #ddd", borderRadius: 12 }}>
+        <div className="content-box hover:border-[#646cff] transition-colors duration-200">
             <h3 style={{ marginTop: 0 }}>{title}</h3>
             {children}
         </div>

@@ -4,29 +4,20 @@
 @reference "./index.css";
 
 .nav-bar {
-  @apply fixed top-0 left-0 right-0 z-50 flex justify-center items-center h-16 bg-gray-600 shadow-md;}
+  @apply fixed top-0 left-0 right-0 z-50 flex items-center h-14 shadow-lg px-6;
+  /* Light mode: Soft Slate | Dark mode: Deep Charcoal (Elevated) */
+  @apply bg-[#f1f5f9] text-slate-700 dark:bg-[#1c1c1c] dark:text-white/90;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Vertical Divider Style */
+.nav-divider {
+  @apply h-6 w-[1px] mx-2;
+  @apply bg-gray-400 dark:bg-gray-500;
+}
 
 @layer base {
   #root {
     @apply max-w-[1280px] mx-auto p-8 pt-16 text-center;
   }
 }
-
-/*ON LOGIN */
-/*#school {*/
-/*  @apply relative max-w-md mx-auto mt-5 p-4 rounded-lg shadow-md;*/
-/*}*/
-
-/* The label */
-/*#schools {*/
-/*  @apply block text-sm font-medium  mb-2;*/
-/*}*/
-
-/*#school-item {*/
-/*  @apply px-4 py-2 text-white cursor-pointer text-left*/
-/*  hover:bg-white hover:text-black transition-colors;*/
-/*}*/
-
-/*#input-box {*/
-/*  @apply bg-gray-200 border border-gray-500 text-gray-900 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-gray-700*/
-/*}*/
