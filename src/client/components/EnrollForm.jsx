@@ -112,15 +112,29 @@ function EnrollForm() {
         setDraftsShowing(false);
     }
 
+    function deleteDraft(draft) {
+        const drafts = JSON.parse(localStorage.getItem("draftEnrollments"));
+        const newDrafts = drafts.filter(item => item.created !== draft.created);
+        setDrafts(newDrafts);
+        localStorage.setItem("draftEnrollments", JSON.stringify(newDrafts));
+
+    }
+
     return (
         <div className="page-layout">
             <h1> Add Enrollment Record</h1>
             {draftsShowing ? (
                 <div className="flex flex-col gap-2">
                     {drafts.map((draft, index) => (
-                        <button key={index} type="button" onClick={() => loadDraft(draft)} className="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded text-left">
-                            Draft {index + 1} – {draft.created}
-                        </button>
+                        <div>
+                            <button key={index} type="button" onClick={() => loadDraft(draft)} className="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded text-left">
+                                Draft {index + 1} – {draft.created}
+                            </button>
+                            {"  "}
+                            <button key={index} type="button" onClick={() => deleteDraft(draft)} className="bg-red-500 hover:bg-red-700 px-3 py-2 rounded text-left text-black">
+                                Delete
+                            </button>
+                        </div>
                     ))}<br />
                     <button onClick={() => setDraftsShowing(false)} className="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">Back</button>
                 </div>
