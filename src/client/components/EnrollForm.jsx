@@ -11,10 +11,11 @@ function EnrollForm() {
     const [notInvited, setNotInvited] = useState("");
     const [notReturn, setNotReturn] = useState("");
     const [grade, setGrade] = useState("");
-    const [soc, setSoc] = useState(true);
+    const [soc, setSoc] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
     const [draftsShowing, setDraftsShowing] = useState(false);
     const [drafts, setDrafts] = useState([]);
+    const [showSuggestion, setShowSuggestion] = useState(false);
 
     const navigate = useNavigate()
 
@@ -120,6 +121,58 @@ function EnrollForm() {
 
     }
 
+    async function handleShowSuggestions() {
+        if (!token || !schoolId) {
+            alert("You must be logged in to view suggestions.");
+            return;
+        }
+
+        try {
+            // Only call backend when button is clicked
+            const res = await fetch(
+                `http://localhost:3000/api/enrollment/suggestions?schoolId=${Number(schoolId)}&soc=${soc ? 1 : 0}`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                alert(data?.error || "Failed to load suggestions.");
+                return;
+            }
+
+            setSuggestions(data);
+
+            // Prefer AI text if available, otherwise fallback to numeric averages
+            if (data.aiText && data.aiText !== "AI suggestions are unavailable right now.") {
+                alert(data.aiText);
+                return;
+            }
+
+            const avg = data.averagesPerYear;
+            if (!avg) {
+                alert("No historical data available yet.");
+                return;
+            }
+
+            alert(
+                `Suggested input data:\n\n` +
+                `Students Added (avg/yr): ${avg.studentsAdded}\n` +
+                `Graduating (avg/yr): ${avg.graduating}\n` +
+                `Exchange Students (avg/yr): ${avg.exchangeStudents}\n` +
+                `Dismissed (avg/yr): ${avg.dismissed}\n` +
+                `Not Invited (avg/yr): ${avg.notInvited}\n` +
+                `Not Return (avg/yr): ${avg.notReturn}`
+            );
+        } catch (err) {
+            console.error(err);
+            alert("Network error while loading suggestions.");
+        }
+    }
+
+
     return (
         <div className="page-layout">
             <h1> Add Enrollment Record</h1>
@@ -141,6 +194,7 @@ function EnrollForm() {
             ) : (
                 <form action="" method="POST" onSubmit={addEnrollmentRecord} className="content-box max-w-2xl mx-auto flex flex-col gap-4">
                     <button type="button" onClick={showDrafts} className="px-4 py-2">Load Draft</button>
+                    <button type="button" onClick={handleShowSuggestions} className="px-4 py-2">Show Suggestions</button>
 
                     <div className="flex items-center gap-4">
                         <label className="w-64">Your School:</label>
