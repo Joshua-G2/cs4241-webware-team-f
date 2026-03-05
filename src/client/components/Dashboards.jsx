@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bar, Line } from "react-chartjs-2";
+import { Section, Kpi, Card, authFetch, useIsDark, formatDelta } from "./DashboardElements";
 
 import {
     Chart as ChartJS,
@@ -24,38 +25,6 @@ ChartJS.register(
     Tooltip,
     Legend
 );
-
-// Auth wrapper
-function authFetch(url, options = {}) {
-    const token = localStorage.getItem("token");
-    return fetch(url, {
-        ...options,
-        headers: {
-            ...(options.headers || {}),
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-    });
-}
-
-// Detect dark mode (JS-driven, updates on class/data-theme changes)
-function useIsDark() {
-    const read = () =>
-        document.documentElement.classList.contains("dark") ||
-        document.documentElement.getAttribute("data-theme") === "dark";
-
-    const [isDark, setIsDark] = useState(() => read());
-
-    useEffect(() => {
-        const obs = new MutationObserver(() => setIsDark(read()));
-        obs.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ["class", "data-theme"],
-        });
-        return () => obs.disconnect();
-    }, []);
-
-    return isDark;
-}
 
 export default function Dashboards() {
     const navigate = useNavigate();
@@ -832,10 +801,10 @@ export default function Dashboards() {
                         <Card title={comparing ? `Year Comparison: ${year1Label} vs ${year2Label}` : "Attrition by Grade (Bar)"}>
                             {comparing && yearCompareBar ? (
                                 <Bar data={yearCompareBar} options={baseOptions} />
-                            ) : !payload.soc && gradeBarData ? (
+                            ) : gradeBarData ? (
                                 <Bar data={gradeBarData} options={baseOptions} />
                             ) : (
-                                <div>No grade-level chart in SOC.</div>
+                                <div>No grade-level data available.</div>
                             )}
                         </Card>
 
@@ -861,59 +830,4 @@ export default function Dashboards() {
             )}
         </div>
     );
-}
-
-function Section({ title, subtitle, children }) {
-    return (
-        <div
-            className="content-box"
-            style={{
-                padding: 14,
-                borderRadius: 14,
-            }}
-        >
-            <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 12, textAlign: "center" }}>
-                <div style={{ fontSize: 14, fontWeight: 800 }}>{title}</div>
-                {subtitle ? <div style={{ fontSize: 12, opacity: 0.75 }}>{subtitle}</div> : null}
-            </div>
-            {children}
-        </div>
-    );
-}
-
-function Kpi({ title, value, sub }) {
-    return (
-        <div className="content-box hover:border-[#646cff] transition-colors duration-200">
-            <div style={{ fontSize: 12, opacity: 0.8, textAlign: "center" }}>{title}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.1, textAlign: "center" }}>{value}</div>
-            {sub ? <div style={{ marginTop: 6, fontSize: 12, opacity: 0.7, textAlign: "center" }}>{sub}</div> : null}
-        </div>
-    );
-}
-
-function Card({ title, children }) {
-    return (
-        <div
-            className="content-box hover:border-[#646cff] transition-colors duration-200"
-            style={{
-                minHeight: 360,
-                display: "flex",
-                flexDirection: "column",
-            }}
-        >
-            <h3 style={{ marginTop: 0, textAlign: "center" }}>{title}</h3>
-
-            {/* this wrapper lets charts grow but also keeps text cards sized nicely */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                {children}
-            </div>
-        </div>
-    );
-}
-
-function formatDelta(n) {
-    if (n === null || n === undefined || Number.isNaN(Number(n))) return "—";
-    const num = Number(n);
-    const sign = num > 0 ? "+" : "";
-    return `${sign}${num}`;
 }
