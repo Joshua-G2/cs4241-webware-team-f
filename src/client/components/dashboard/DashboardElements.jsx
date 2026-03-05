@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+// Shared presentational building blocks and small display helpers
+// used across the enrollment dashboard (sections, cards, KPIs, and value formatting).
+import React from "react";
 
 export function Section({ title, subtitle, children }) {
     return (
@@ -46,37 +48,6 @@ export function Card({ title, children }) {
             </div>
         </div>
     );
-}
-
-export function authFetch(url, options = {}) {
-    const token = localStorage.getItem("token");
-
-    return fetch(url, {
-        ...options,
-        headers: {
-            ...(options.headers || {}),
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-    });
-}
-
-export function useIsDark() {
-    const read = () =>
-        document.documentElement.classList.contains("dark") ||
-        document.documentElement.getAttribute("data-theme") === "dark";
-
-    const [isDark, setIsDark] = useState(() => read());
-
-    useEffect(() => {
-        const obs = new MutationObserver(() => setIsDark(read()));
-        obs.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ["class", "data-theme"],
-        });
-        return () => obs.disconnect();
-    }, []);
-
-    return isDark;
 }
 
 export function formatDelta(n) {

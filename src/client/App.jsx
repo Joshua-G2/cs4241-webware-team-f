@@ -3,7 +3,7 @@ import './App.css'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import NavBar from './components/NavBar.jsx';
 import DataDisplay from "./components/DataDisplay.jsx";
-import Dashboards from "./components/Dashboards.jsx";
+import Dashboards from "./components/dashboard/Dashboards.jsx";
 import Login from "./components/Login.jsx";
 import EnrollForm from "./components/EnrollForm.jsx";
 import AdmissionForm from "./components/AdmissionForm.jsx";

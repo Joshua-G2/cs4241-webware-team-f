@@ -1,251 +1,55 @@
+// Custom React hooks and helpers for the enrollment dashboard:
+// - manages filters/lookups, data fetching, derived KPIs, and chart configuration
+// - exposes auth-aware fetch (`authFetch`) and a theme hook (`useIsDark`) for chart styling
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Bar, Line } from "react-chartjs-2";
-import { Section, Kpi, Card, authFetch, useIsDark, formatDelta } from "./DashboardElements";
 
-import {
-    Chart as ChartJS,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    PointElement,
-    LineElement,
-    Title,
-    Tooltip,
-    Legend
-} from "chart.js";
+export function authFetch(url, options = {}) {
+    const token = localStorage.getItem("token");
 
-ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    PointElement,
-    LineElement,
-    Title,
-    Tooltip,
-    Legend
-);
-
-// Top-level enrollment dashboard page that orchestrates filters, data loading, KPIs, and charts.
-export default function Dashboards() {
-    const navigate = useNavigate();
-
-    // token guard
-    useEffect(() => {
-        const token = localStorage.getItem("token");
-        if (!token) navigate("/Login");
-    }, [navigate]);
-
-    const isDark = useIsDark();
-
-    const {
-        schools,
-        schoolId,
-        setSchoolId,
-        yearsForSchool,
-        yearId,
-        setYearId,
-        yearId2,
-        setYearId2,
-        benchmark,
-        setBenchmark,
-        soc,
-        setSoc,
-        canCompareYears,
-        isAdmin,
-        lockedSchoolID,
-        error: filtersError,
-    } = useDashboardFilters(navigate);
-
-    const {
-        payload,
-        payload2,
-        error: dataError,
-        noYears,
-    } = useDashboardData({
-        navigate,
-        schoolId,
-        yearId,
-        yearId2,
-        benchmark,
-        soc,
-        canCompareYears,
-        yearsForSchool,
+    return fetch(url, {
+        ...options,
+        headers: {
+            ...(options.headers || {}),
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
     });
-
-    const {
-        kpis,
-        kpis2,
-        benchKpis,
-        headline,
-        yoyAdded,
-        previousYearLabel,
-        benchmarkLabel,
-        year1Label,
-        year2Label,
-        comparing,
-        compareDelta,
-    } = useDashboardDerivedMetrics({
-        payload,
-        payload2,
-        yearsForSchool,
-        yearId,
-        yearId2,
-        benchmark,
-        canCompareYears,
-    });
-
-    const {
-        baseOptions,
-        stackedOptions,
-        gradeBarData,
-        enrollStackedData,
-        trendLineData,
-        yearCompareBar,
-    } = useDashboardCharts({
-        isDark,
-        payload,
-        benchmarkLabel,
-        comparing,
-        year1Label,
-        year2Label,
-        kpis,
-        kpis2,
-    });
-
-    const err = filtersError || dataError;
-
-    if (!schools.length) return <div style={{ padding: 16 }}>Loading…</div>;
-
-    return (
-        <div style={{ padding: 16 }}>
-            <h1 style={{ marginTop: 0 }}>Enrollment Dashboard</h1>
-
-            <DashboardFilters
-                schools={schools}
-                schoolId={schoolId}
-                onSchoolChange={setSchoolId}
-                yearsForSchool={yearsForSchool}
-                yearId={yearId}
-                onYearChange={setYearId}
-                benchmark={benchmark}
-                onBenchmarkChange={setBenchmark}
-                canCompareYears={canCompareYears}
-                yearId2={yearId2}
-                onYear2Change={setYearId2}
-                soc={soc}
-                onSocChange={setSoc}
-                isAdmin={isAdmin}
-                lockedSchoolID={lockedSchoolID}
-            />
-
-            {payload && (
-                <div style={{ marginTop: 8, opacity: 0.8, textAlign: "center" }}>
-                    {payload.school?.name ?? "School"} • Benchmark: {benchmarkLabel} • Group size:{" "}
-                    {payload.benchmarkSchoolCount}
-                    {comparing ? ` • Year compare: ${year1Label} vs ${year2Label}` : ""}
-                </div>
-            )}
-
-            {noYears && (
-                <div style={{ marginTop: 12, padding: 10, border: "1px solid #ddd", borderRadius: 10 }}>
-                    No years with data for this school (try a different school).
-                </div>
-            )}
-
-            {err && (
-                <div
-                    style={{
-                        marginTop: 12,
-                        padding: 10,
-                        border: "1px solid #e7b6c2",
-                        borderRadius: 10,
-                        background: "#fff6f8",
-                        color: "crimson",
-                    }}
-                >
-                    {err}
-                </div>
-            )}
-
-            {!payload || !kpis ? (
-                <div style={{ marginTop: 16 }}>Loading dashboard…</div>
-            ) : (
-                <>
-                    <div
-                        style={{
-                            marginTop: 16,
-                            display: "grid",
-                            gridTemplateColumns: "repeat(auto-fit, minmax(520px, 1fr))",
-                            gap: 14,
-                            alignItems: "start",
-                        }}
-                    >
-                        <PeerComparisonSection
-                            headline={headline}
-                            benchmarkLabel={benchmarkLabel}
-                            year1Label={year1Label}
-                        />
-
-                        <YearOverYearSection
-                            yoyAdded={yoyAdded}
-                            previousYearLabel={previousYearLabel}
-                            year1Label={year1Label}
-                            netChange={kpis.netChange}
-                        />
-                    </div>
-
-                    <CompareYearsSection
-                        comparing={comparing}
-                        compareDelta={compareDelta}
-                        year1Label={year1Label}
-                        year2Label={year2Label}
-                    />
-
-                    <TotalsSection kpis={kpis} year1Label={year1Label} />
-
-                    <ChartsGrid
-                        comparing={comparing}
-                        year1Label={year1Label}
-                        year2Label={year2Label}
-                        yearCompareBar={yearCompareBar}
-                        gradeBarData={gradeBarData}
-                        trendLineData={trendLineData}
-                        enrollStackedData={enrollStackedData}
-                        baseOptions={baseOptions}
-                        stackedOptions={stackedOptions}
-                        payload={payload}
-                    />
-                </>
-            )}
-        </div>
-    );
 }
 
-// Manages school/year filter state and loads schools and years-with-data for the current selection.
-function useDashboardFilters(navigate) {
+export function useIsDark() {
+    const read = () =>
+        document.documentElement.classList.contains("dark") ||
+        document.documentElement.getAttribute("data-theme") === "dark";
+
+    const [isDark, setIsDark] = useState(() => read());
+
+    useEffect(() => {
+        const obs = new MutationObserver(() => setIsDark(read()));
+        obs.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ["class", "data-theme"],
+        });
+        return () => obs.disconnect();
+    }, []);
+
+    return isDark;
+}
+
+export function useDashboardFilters(navigate) {
     const [schools, setSchools] = useState([]); // [{schoolId,name}]
     const [schoolId, setSchoolId] = useState(null);
-
     const [yearsForSchool, setYearsForSchool] = useState([]); // [{ID,SCHOOL_YEAR}]
     const [yearId, setYearId] = useState(null);
-
     // Compare year (only allowed for benchmark === "mine")
     const [yearId2, setYearId2] = useState(null);
-
     const [soc, setSoc] = useState(false);
-
     // backend expects mine | region | all
     const [benchmark, setBenchmark] = useState("mine"); // mine | region | all
-
     const [error, setError] = useState("");
-
     const isAdmin = localStorage.getItem("isAdmin") === "1";
     const lockedSchoolID = Number(localStorage.getItem("schoolId"));
-
     // Compare-year only allowed when peer group is My School (mine)
     const canCompareYears = benchmark === "mine";
-
+    
     // If user switches away from mine, clear compare year
     useEffect(() => {
         if (!canCompareYears) {
@@ -353,8 +157,7 @@ function useDashboardFilters(navigate) {
     };
 }
 
-// Fetches the primary and comparison dashboard payloads based on the current filters.
-function useDashboardData({
+export function useDashboardData({
     navigate,
     schoolId,
     yearId,
@@ -442,8 +245,7 @@ function useDashboardData({
     return { payload, payload2, error, noYears };
 }
 
-// Derives KPIs, benchmark comparison metrics, labels, and comparison deltas from raw payloads.
-function useDashboardDerivedMetrics({
+export function useDashboardDerivedMetrics({
     payload,
     payload2,
     yearsForSchool,
@@ -621,8 +423,7 @@ function useDashboardDerivedMetrics({
     };
 }
 
-// Builds theme-aware Chart.js options and datasets for all dashboard visualizations.
-function useDashboardCharts({
+export function useDashboardCharts({
     isDark,
     payload,
     benchmarkLabel,
@@ -842,254 +643,3 @@ function useDashboardCharts({
     };
 }
 
-// Renders the filter bar for school, year, peer group, comparison year, and SOC toggle.
-function DashboardFilters({
-    schools,
-    schoolId,
-    onSchoolChange,
-    yearsForSchool,
-    yearId,
-    onYearChange,
-    benchmark,
-    onBenchmarkChange,
-    canCompareYears,
-    yearId2,
-    onYear2Change,
-    soc,
-    onSocChange,
-    isAdmin,
-    lockedSchoolID,
-}) {
-    return (
-        <div
-            className="content-box"
-            style={{
-                display: "flex",
-                gap: 12,
-                alignItems: "center",
-                flexWrap: "wrap",
-                justifyContent: "center",
-            }}
-        >
-            <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                School
-                <select
-                    value={schoolId ?? ""}
-                    onChange={(e) => onSchoolChange(Number(e.target.value))}
-                    disabled={!isAdmin}
-                >
-                    {schools
-                        .filter((s) => isAdmin || Number(s.schoolId) === lockedSchoolID)
-                        .map((s) => (
-                            <option key={s.schoolId} value={s.schoolId}>
-                                {(s.name ?? `School ${s.schoolId}`)} (ID {s.schoolId})
-                            </option>
-                        ))}
-                </select>
-            </label>
-
-            <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                Year
-                <select
-                    value={yearId ?? ""}
-                    onChange={(e) => onYearChange(Number(e.target.value))}
-                    disabled={!yearsForSchool.length}
-                >
-                    {yearsForSchool.map((y) => (
-                        <option key={y.ID} value={y.ID}>
-                            {y.SCHOOL_YEAR}
-                        </option>
-                    ))}
-                </select>
-            </label>
-
-            <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                Peer Group
-                <select value={benchmark} onChange={(e) => onBenchmarkChange(e.target.value)}>
-                    <option value="mine">My School</option>
-                    <option value="region">My Region</option>
-                    <option value="all">All Schools</option>
-                </select>
-            </label>
-
-            {/* Compare year only allowed in My School */}
-            <label style={{ display: "flex", gap: 8, alignItems: "center", opacity: canCompareYears ? 1 : 0.6 }}>
-                Compare Year
-                <select
-                    value={yearId2 ?? ""}
-                    onChange={(e) => onYear2Change(e.target.value ? Number(e.target.value) : null)}
-                    disabled={!canCompareYears || !yearsForSchool.length}
-                    title={!canCompareYears ? "Switch Peer Group to 'My School' to compare two years." : ""}
-                >
-                    <option value="">(none)</option>
-                    {yearsForSchool
-                        .filter((y) => y.ID !== yearId)
-                        .map((y) => (
-                            <option key={y.ID} value={y.ID}>
-                                {y.SCHOOL_YEAR}
-                            </option>
-                        ))}
-                </select>
-            </label>
-
-            <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                SOC
-                <input type="checkbox" checked={soc} onChange={(e) => onSocChange(e.target.checked)} />
-            </label>
-        </div>
-    );
-}
-
-// Displays peer-group attrition KPIs for the selected year and benchmark.
-function PeerComparisonSection({ headline, benchmarkLabel, year1Label }) {
-    return (
-        <Section
-            title="Peer Group Comparison (Selected Year)"
-            subtitle={`These compare your selected school in ${year1Label} to the chosen peer group (${benchmarkLabel}).`}
-        >
-            {headline && (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
-                    <Kpi
-                        title={`Peer Attrition Rate (${benchmarkLabel})`}
-                        value={`${(headline.benchRate * 100).toFixed(1)}%`}
-                        sub={`Across ${headline.groupSize} schools`}
-                    />
-                    <Kpi
-                        title="My School Attrition vs Peers"
-                        value={`${(headline.diff * 100).toFixed(1)} pts`}
-                        sub={
-                            headline.diff < 0
-                                ? "Lower than peers"
-                                : headline.diff > 0
-                                    ? "Higher than peers"
-                                    : "Same as peers"
-                        }
-                    />
-                </div>
-            )}
-        </Section>
-    );
-}
-
-// Shows year-over-year changes in added students and net enrollment for the selected school/year.
-function YearOverYearSection({ yoyAdded, previousYearLabel, year1Label, netChange }) {
-    return (
-        <Section
-            title="Year-over-Year (Selected School)"
-            subtitle={
-                previousYearLabel
-                    ? `These compare your selected year (${year1Label}) to the previous available year with data (${previousYearLabel}).`
-                    : `These show year-over-year metrics for the selected year (${year1Label}). No previous year with data is available.`
-            }
-        >
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
-                <Kpi
-                    title="Added vs previous year"
-                    value={formatDelta(yoyAdded.value)}
-                    sub={previousYearLabel ? `${year1Label} vs ${previousYearLabel}` : "No previous year available"}
-                />
-                <Kpi
-                    title="Net Enrollment Change"
-                    value={netChange > 0 ? `+${netChange}` : netChange}
-                    sub={`Selected year: ${year1Label}`}
-                />
-            </div>
-        </Section>
-    );
-}
-
-// Compares two selected years for the same school, highlighting deltas across key KPIs.
-function CompareYearsSection({ comparing, compareDelta, year1Label, year2Label }) {
-    if (!comparing || !compareDelta) return null;
-
-    return (
-        <div style={{ marginTop: 14 }}>
-            <Section
-                title="Selected Year vs Compare Year (Selected School)"
-                subtitle={`These compare your school in ${year1Label} vs ${year2Label}.`}
-            >
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-                    <Kpi title={`Δ Added (${year1Label} - ${year2Label})`} value={formatDelta(compareDelta.added)} />
-                    <Kpi title={`Δ Not Returning (${year1Label} - ${year2Label})`} value={formatDelta(compareDelta.notReturning)} />
-                    <Kpi title="Δ Attrition Rate" value={`${formatDelta(compareDelta.attritionPts.toFixed(1))} pts`} />
-                    <Kpi title="Δ Net Change" value={formatDelta(compareDelta.netChange)} />
-                </div>
-            </Section>
-        </div>
-    );
-}
-
-// Summarizes total counts and attrition rate for the selected school and year.
-function TotalsSection({ kpis, year1Label }) {
-    return (
-        <div style={{ marginTop: 14 }}>
-            <Section
-                title="Selected Year Totals (Selected School)"
-                subtitle={`These are the raw totals for your selected school in ${year1Label}.`}
-            >
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
-                    <Kpi title="Added" value={kpis.totals.added} />
-                    <Kpi title="Graduated" value={kpis.totals.graduated} />
-                    <Kpi title="Dismissed" value={kpis.totals.dismissed} />
-                    <Kpi title="Not Invited" value={kpis.totals.notInvited} />
-                    <Kpi title="Not Returning" value={kpis.totals.notReturning} />
-                    <Kpi title="Attrition Rate" value={`${(kpis.attritionRate * 100).toFixed(1)}%`} />
-                </div>
-            </Section>
-        </div>
-    );
-}
-
-// Lays out all dashboard charts and the peer-group totals card using the prepared chart data.
-function ChartsGrid({
-    comparing,
-    year1Label,
-    year2Label,
-    yearCompareBar,
-    gradeBarData,
-    trendLineData,
-    enrollStackedData,
-    baseOptions,
-    stackedOptions,
-    payload,
-}) {
-    return (
-        <div
-            style={{
-                marginTop: 16,
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(520px, 1fr))",
-                gap: 16,
-                alignItems: "start",
-            }}
-        >
-            <Card title={comparing ? `Year Comparison: ${year1Label} vs ${year2Label}` : "Attrition by Grade (Bar)"}>
-                {comparing && yearCompareBar ? (
-                    <Bar data={yearCompareBar} options={baseOptions} />
-                ) : gradeBarData ? (
-                    <Bar data={gradeBarData} options={baseOptions} />
-                ) : (
-                    <div>No grade-level data available.</div>
-                )}
-            </Card>
-
-            <Card title="Added Trend (Line)">
-                {trendLineData ? <Line data={trendLineData} options={baseOptions} /> : <div>No trend data.</div>}
-            </Card>
-
-            <Card title="Enrollment by Type & Gender (Stacked Bar)">
-                {enrollStackedData ? <Bar data={enrollStackedData} options={stackedOptions} /> : <div>No enrollment activity data.</div>}
-            </Card>
-
-            <Card title="Peer Group Totals (Aggregate)">
-                <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
-                    <div>Added: {payload.benchTotals.added}</div>
-                    <div>Graduated: {payload.benchTotals.graduated}</div>
-                    <div>Dismissed: {payload.benchTotals.dismissed}</div>
-                    <div>Not Invited: {payload.benchTotals.notInvited}</div>
-                    <div>Not Returning: {payload.benchTotals.notReturning}</div>
-                </div>
-            </Card>
-        </div>
-    );
-}
