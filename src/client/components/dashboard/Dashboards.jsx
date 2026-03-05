@@ -1,6 +1,6 @@
-// Enrollment dashboard page that wires filters, data hooks, KPIs, and charts
-// into a single view for the `/Dashboards` route.
-import { useEffect } from "react";
+// Enrollment / Admissions dashboard page that wires filters, data hooks, KPIs, and charts
+// into a single view for the `/Dashboards` route. Toggle between enrollment (attrition) and admissions data.
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useIsDark } from "./DashboardHooks";
 import {
@@ -43,6 +43,8 @@ ChartJS.register(
 
 export default function Dashboards() {
     const navigate = useNavigate();
+    // Toggle between enrollment (attrition) and admissions data; drives which API and KPIs/charts load
+    const [dataMode, setDataMode] = useState("enrollment"); // "enrollment" | "admissions"
 
     // token guard
     useEffect(() => {
@@ -69,7 +71,7 @@ export default function Dashboards() {
         isAdmin,
         lockedSchoolID,
         error: filtersError,
-    } = useDashboardFilters(navigate);
+    } = useDashboardFilters(navigate, dataMode);
 
     const {
         payload,
@@ -85,6 +87,7 @@ export default function Dashboards() {
         soc,
         canCompareYears,
         yearsForSchool,
+        dataMode,
     });
 
     const {
@@ -107,6 +110,7 @@ export default function Dashboards() {
         yearId2,
         benchmark,
         canCompareYears,
+        dataMode,
     });
 
     const {
@@ -125,6 +129,7 @@ export default function Dashboards() {
         year2Label,
         kpis,
         kpis2,
+        dataMode,
     });
 
     const err = filtersError || dataError;
@@ -133,7 +138,34 @@ export default function Dashboards() {
 
     return (
         <div style={{ padding: 16 }}>
-            <h1 style={{ marginTop: 0 }}>Enrollment Dashboard</h1>
+            {/* Swap to admissions: toggle and page title change; filters/hooks use dataMode for API and derived metrics */}
+            <div style={{ marginBottom: 8 }}>
+                <h1 style={{ marginTop: 0, marginBottom: 8 }}>
+                    {dataMode === "admissions" ? "Admissions" : "Enrollment"} Dashboard
+                </h1>
+                <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: 12, marginBottom: 12 }}>
+                    <button
+                        type="button"
+                        onClick={() => setDataMode("enrollment")}
+                        style={{
+                            fontWeight: dataMode === "enrollment" ? 700 : 400,
+                            background: dataMode === "enrollment" ? "" : "transparent",
+                        }}
+                    >
+                        Enrollment
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setDataMode("admissions")}
+                        style={{
+                            fontWeight: dataMode === "admissions" ? 700 : 400,
+                            background: dataMode === "admissions" ? "" : "transparent",
+                        }}
+                    >
+                        Admissions
+                    </button>
+                </div>
+            </div>
 
             <DashboardFilters
                 schools={schools}
@@ -188,13 +220,15 @@ export default function Dashboards() {
                             headline={headline}
                             benchmarkLabel={benchmarkLabel}
                             year1Label={year1Label}
+                            dataMode={dataMode}
                         />
 
                         <YearOverYearSection
                             yoyAdded={yoyAdded}
                             previousYearLabel={previousYearLabel}
                             year1Label={year1Label}
-                            netChange={kpis.netChange}
+                            netChange={kpis.netChange ?? (dataMode === "admissions" ? kpis.totals?.newEnrollments : undefined)}
+                            dataMode={dataMode}
                         />
                     </div>
 
@@ -203,9 +237,10 @@ export default function Dashboards() {
                         compareDelta={compareDelta}
                         year1Label={year1Label}
                         year2Label={year2Label}
+                        dataMode={dataMode}
                     />
 
-                    <TotalsSection kpis={kpis} year1Label={year1Label} />
+                    <TotalsSection kpis={kpis} year1Label={year1Label} dataMode={dataMode} />
 
                     <ChartsGrid
                         comparing={comparing}
@@ -218,6 +253,7 @@ export default function Dashboards() {
                         baseOptions={baseOptions}
                         stackedOptions={stackedOptions}
                         payload={payload}
+                        dataMode={dataMode}
                     />
                 </>
             )}

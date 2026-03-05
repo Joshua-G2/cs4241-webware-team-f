@@ -60,7 +60,7 @@ function AdmissionForm() {
             return;
         }
 
-        fetch('/api/enrollment', {
+        fetch('/api/admission', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

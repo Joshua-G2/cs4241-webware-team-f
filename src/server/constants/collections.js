@@ -8,4 +8,6 @@ export const COLLECTIONS_DASH = {
     ENROLL_ATTRITION: "Enroll_Attrition",
     ENROLL_ATTRITION_SOC: "Enroll_Attrition_Soc",
     ADMISSION_ACTIVITY_ENROLLMENT: "Admission_Activity_Enrollment",
+    ADMISSION_ACTIVITY: "Admission_Activity",
+    ADMISSION_ACTIVITY_SOC: "Admission_Activity_Soc",
 };

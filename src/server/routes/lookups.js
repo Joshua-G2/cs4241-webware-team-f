@@ -107,22 +107,31 @@ router.get("/schools-with-attrition", authenticateToken, async (req, res) => {
     }
 });
 
-/** GET /api/lookups/years-with-data?schoolId=13&soc=0 (protected) */
+/** GET /api/lookups/years-with-data?schoolId=13&soc=0&mode=enrollment|admissions (protected) */
 router.get("/years-with-data", authenticateToken, async (req, res) => {
     try {
         const db = getDb();
         const schoolId = Number(req.query.schoolId);
         const soc = String(req.query.soc ?? "0") === "1";
+        const mode = String(req.query.mode ?? "enrollment"); // enrollment | admissions
 
         if (!Number.isFinite(schoolId)) {
             return res.status(400).json({ error: "schoolId is required" });
         }
 
-        const attrCol = db.collection(
-            soc ? COLLECTIONS_DASH.ENROLL_ATTRITION_SOC : COLLECTIONS_DASH.ENROLL_ATTRITION
-        );
+        // Swap to admissions collections when mode=admissions so year dropdown shows years with admission data
+        const collectionName =
+            mode === "admissions"
+                ? soc
+                    ? COLLECTIONS_DASH.ADMISSION_ACTIVITY_SOC
+                    : COLLECTIONS_DASH.ADMISSION_ACTIVITY
+                : soc
+                    ? COLLECTIONS_DASH.ENROLL_ATTRITION_SOC
+                    : COLLECTIONS_DASH.ENROLL_ATTRITION;
 
-        const yearIdRows = await attrCol
+        const dataCol = db.collection(collectionName);
+
+        const yearIdRows = await dataCol
             .aggregate([
                 { $match: { SCHOOL_ID: schoolId } },
                 { $group: { _id: "$SCHOOL_YR_ID" } },
