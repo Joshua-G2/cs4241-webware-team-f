@@ -7,6 +7,12 @@ import { MongoClient, ServerApiVersion } from "mongodb";
 import jwt from "jsonwebtoken"
 import { GoogleGenAI } from "@google/genai";
 
+import { connectDB } from "./config/db.js";
+import authRouter from "./routes/auth.js";
+import formsRouter from "./routes/forms.js";
+import chartsRouter from "./routes/charts.js";
+import lookupsRouter from "./routes/lookups.js";
+
 const app = express();
 const port = process.env.PORT || 3000;
 const uri = process.env.MONGO_URI
@@ -231,6 +237,18 @@ app.post("/api/enrollment", async (req, res) => {
     }
 })
 
+await connectDB();
+
+app.use(express.json());
+app.use(cors());
+
+// Mount route modules (auth uses base path so /login and /api/login/schools work)
+app.use(authRouter);
+app.use("/api", formsRouter);
+app.use("/api", chartsRouter);
+app.use("/api/lookups", lookupsRouter);
+
+async function startServer() {
 app.post("/api/admission", async (req, res) => {
     const formData = req.body;
     try {
@@ -841,6 +859,8 @@ async function startServer() {
     await connectDB();
     ViteExpress.listen(app, port, () => {
         console.log("Server is listening on port", port);
-        console.log(`Client url: http://localhost:${port}`);    });
+        console.log(`Client url: http://localhost:${port}`);
+    });
 }
-const server = startServer();
+
+startServer();
