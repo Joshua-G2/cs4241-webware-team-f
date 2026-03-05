@@ -18,9 +18,14 @@ function EnrollForm() {
 
     const navigate = useNavigate()
 
+    //voice to text STUFF
+    const [voiceText, setVoiceText] = useState("");
+    const [isListening, setIsListening] = useState(false);
+
     const token = localStorage.getItem("token");
     const schoolId = localStorage.getItem("schoolId");
     const school = localStorage.getItem("school");
+    const [showHelp, setShowHelp] = useState(false);
 
     const formFields = [
         { label: "Students Added this Year", name: "studentsAdded", value: studentsAdded, setter: setStudentsAdded, type: "number" },
@@ -41,6 +46,104 @@ function EnrollForm() {
         gender: gender,
         soc: soc
     });
+
+    function startListening() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+            alert("Speech Recognition not supported in this browser. Use Chrome.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = "en-US";
+        recognition.interimResults = false;
+
+        recognition.onstart = () => setIsListening(true);
+        recognition.onend = () => setIsListening(false);
+
+        recognition.onresult = (event) => {
+            let transcript = event.results[0][0].transcript.toLowerCase();
+
+            // Convert spoken "comma" into actual comma
+            transcript = transcript.replace(/comma/g, ",");
+
+            setVoiceText(transcript);
+            processVoiceInput(transcript);
+        };
+
+        recognition.start();
+    }
+
+    function processVoiceInput(text) {
+
+        let transcript = text.toLowerCase();
+
+        // Normalize variations
+        transcript = transcript.replace(/students? of color/g, "soc");
+        transcript = transcript.replace(/comma/g, ",");
+        transcript = transcript.replace(/student of color/g, "soc");
+
+        const yearMatch = transcript.match(/year\s*(\d{4})/);
+
+        if (yearMatch) {
+            const spokenYear = parseInt(yearMatch[1]);
+
+            if (spokenYear >= 1990 && spokenYear <= 2026) {
+                const dropdownIndex = spokenYear - 1993;
+                setYear(dropdownIndex.toString());
+            }
+
+            transcript = transcript.replace(yearMatch[0], "");
+        }
+
+        const socMatch = transcript.match(/soc\s*(yes|no|true|false)/);
+
+        if (socMatch) {
+            const value = socMatch[1];
+            setSoc(value === "yes" || value === "true");
+            transcript = transcript.replace(socMatch[0], "");
+        }
+
+        transcript = transcript
+            .replace(/,+/g, ",")
+            .replace(/^,|,$/g, "")
+            .trim();
+
+        let values = transcript.split(",")
+            .map(v => v.trim())
+            .filter(v => v !== "");
+
+        if (values.length === 0) {
+            values = transcript.match(/\d+/g) || [];
+        }
+
+        values.forEach((val, index) => {
+            const number = val.match(/\d+/);
+            if (number && formFields[index]) {
+                formFields[index].setter(number[0]);
+            }
+        });
+
+        const genderMatch = transcript.match(/(gender\s*)?(male|female|all genders|all|m|f)\b/);
+
+        if (genderMatch) {
+
+            const spokenGender = genderMatch[2];
+
+            if (spokenGender === "male" || spokenGender === "m") {
+                setGender("M");
+            }
+            else if (spokenGender === "female" || spokenGender === "f") {
+                setGender("F");
+            }
+            else if (spokenGender === "all" || spokenGender === "all genders") {
+                setGender("U");
+            }
+
+            transcript = transcript.replace(genderMatch[0], "");
+        }
+    }
 
     function addEnrollmentRecord(e) {
         e.preventDefault();
@@ -119,6 +222,19 @@ function EnrollForm() {
         localStorage.setItem("draftEnrollments", JSON.stringify(newDrafts));
     }
 
+    function clearAllFields() {
+        setStudentsAdded("");
+        setGraduating("");
+        setExchangeStudents("");
+        setDismissed("");
+        setNotInvited("");
+        setNotReturn("");
+        setGrade("");
+        setSoc(false);
+        setGender("U");
+        setYear("1994");
+    }
+
     return (
         <div className="page-layout">
             <h1> Add Enrollment Record</h1>
@@ -188,9 +304,91 @@ function EnrollForm() {
                         <input type="checkbox" checked={soc} onChange={(e) => setSoc(e.target.checked)} className="h-5 w-5"/>
                     </div>
 
+                    <div className="border-2 border-gray-400 rounded-lg p-4 mt-4">
+                        <button
+                            type="button"
+                            onClick={() => setShowHelp(!showHelp)}
+                            className="font-semibold underline"
+                        >
+                            {showHelp ? "Hide Voice Instructions ▲" : "Show Voice Instructions ▼"}
+                        </button>
+
+                        {showHelp && (
+                            <div className="mt-3 text-sm leading-relaxed text-black dark:text-white">
+                                <p>
+                                    This is a Voice to Text feature that enables you to record data while speaking.
+                                </p>
+
+                                <p className="mt-2">
+                                    Press Start and say the numbers you would like to input from top to bottom.
+                                </p>
+
+                                <p className="mt-2">
+                                    Say <strong>“Comma”</strong> when you want to go into a new row.
+                                </p>
+
+                                <p className="mt-2">
+                                    Say <strong>“Year”</strong> and then a value to change the year of enrollment.
+                                </p>
+
+                                <p className="mt-2">
+                                    Say <strong>“Students of Color”</strong>, <strong>“Student of Color”</strong>, or <strong>“SOC”</strong>
+                                    then either <strong>Yes</strong> or <strong>No</strong> to add the data to the SOC database.
+                                </p>
+
+                                <p className="mt-3 font-medium">
+                                    Example:
+                                </p>
+
+                                <p className="italic">
+                                    "6 Comma 8 Comma 14 Comma Year 2015 Comma SOC yes"
+                                </p>
+
+                                <p className="mt-2">
+                                    Will fill out the first 3 fields and Year and SOC.
+                                </p>
+
+                                <p className="mt-2">
+                                    If you want to delete your text use the <strong>Clear All Fields</strong> button.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={clearAllFields}
+                        className="bg-red-500 text-white px-4 py-2 rounded"
+                    >
+                        Clear All Fields
+                    </button>
+
+                    <div className="flex flex-col gap-2 mt-4 border-t pt-4">
+                        <label>Voice Input (Say numbers in order)</label>
+
+                        <textarea
+                            value={voiceText}
+                            onChange={(e) => {
+                                const newText = e.target.value.toLowerCase();
+                                setVoiceText(newText);
+                                processVoiceInput(newText);
+                            }}
+                            className="border p-2 rounded"
+                            placeholder="Say numbers separated by comma, or type manually..."
+                        />
+
+                        <button
+                            type="button"
+                            onClick={startListening}
+                            className="bg-blue-500 text-white px-4 py-2 rounded"
+                        >
+                            {isListening ? "Listening..." : "Start Voice Input"}
+                        </button>
+                    </div>
+
                     <div className="flex flex-row gap-2 mt-2 justify-center">
                         <button type="button" onClick={addDraftEnrollmentRecord} className="flex-1">Save Draft</button>
-                        <button type="submit" className="flex-1">Add Enrollment</button>
+                        <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded">Add Enrollment</button>
                     </div>
                 </form>
             )}
