@@ -304,6 +304,29 @@ function EnrollForm() {
                         <input type="checkbox" checked={soc} onChange={(e) => setSoc(e.target.checked)} className="h-5 w-5"/>
                     </div>
 
+                    <div className="flex flex-col gap-2 mt-4 border-t pt-4">
+                        <label>Voice Input (Say numbers in order)</label>
+
+                        <textarea
+                            value={voiceText}
+                            onChange={(e) => {
+                                const newText = e.target.value.toLowerCase();
+                                setVoiceText(newText);
+                                processVoiceInput(newText);
+                            }}
+                            className="border p-2 rounded"
+                            placeholder="Say numbers separated by comma, or type manually..."
+                        />
+
+                        <button
+                            type="button"
+                            onClick={startListening}
+                            className="bg-blue-500 text-white px-4 py-2 rounded"
+                        >
+                            {isListening ? "Listening..." : "Start Voice Input"}
+                        </button>
+                    </div>
+
                     <div className="border-2 border-gray-400 rounded-lg p-4 mt-4">
                         <button
                             type="button"
@@ -336,6 +359,11 @@ function EnrollForm() {
                                     then either <strong>Yes</strong> or <strong>No</strong> to add the data to the SOC database.
                                 </p>
 
+                                <p className="mt-2">
+                                    Say <strong>“Gender”</strong>, or <strong>“Genders”</strong>
+                                    then either <strong>Male</strong>, <strong>M</strong>, <strong>Female</strong>, <strong>F</strong>, <strong>All</strong>  or <strong>All Genders</strong> to change the Gender of the enrollment
+                                </p>
+
                                 <p className="mt-3 font-medium">
                                     Example:
                                 </p>
@@ -362,29 +390,6 @@ function EnrollForm() {
                     >
                         Clear All Fields
                     </button>
-
-                    <div className="flex flex-col gap-2 mt-4 border-t pt-4">
-                        <label>Voice Input (Say numbers in order)</label>
-
-                        <textarea
-                            value={voiceText}
-                            onChange={(e) => {
-                                const newText = e.target.value.toLowerCase();
-                                setVoiceText(newText);
-                                processVoiceInput(newText);
-                            }}
-                            className="border p-2 rounded"
-                            placeholder="Say numbers separated by comma, or type manually..."
-                        />
-
-                        <button
-                            type="button"
-                            onClick={startListening}
-                            className="bg-blue-500 text-white px-4 py-2 rounded"
-                        >
-                            {isListening ? "Listening..." : "Start Voice Input"}
-                        </button>
-                    </div>
 
                     <div className="flex flex-row gap-2 mt-2 justify-center">
                         <button type="button" onClick={addDraftEnrollmentRecord} className="flex-1">Save Draft</button>
