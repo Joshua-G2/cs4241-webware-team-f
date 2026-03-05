@@ -391,9 +391,7 @@ Return test in this exact shape:
     Dismissed: Min: number, Max: number
     Not Invited Back: Min: number, Max: number
     Did Not Return: Min: number, Max: number
-    
-    
-IF THE MIN AND MAX ARE BOTH 1 MAKE THE MIN 0
+
 Context:
 yearsCount: ${yearsCount}
 averagesPerYear: ${JSON.stringify(averagesPerYear, null, 2)}
