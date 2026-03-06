@@ -16,6 +16,11 @@ function EnrollForm() {
     const [draftsShowing, setDraftsShowing] = useState(false);
     const [drafts, setDrafts] = useState([]);
     const [showSuggestion, setShowSuggestion] = useState(false);
+    const [showAiBox, setShowAiBox] = useState(false);
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiMessages, setAiMessages] = useState([
+        { sender: "ai", text: "Hi! Click “AI Suggestions” and I’ll suggest recommended ranges for each enrollment field based on your school's previous data." }
+    ]);
 
     const navigate = useNavigate()
 
@@ -242,8 +247,10 @@ function EnrollForm() {
             return;
         }
 
+        setShowAiBox(true);
+        setAiLoading(true);
+
         try {
-            // Only call backend when button is clicked
             const res = await fetch(
                 `http://localhost:3000/api/enrollment/suggestions?schoolId=${Number(schoolId)}&soc=${soc ? 1 : 0}`,
                 {
@@ -254,39 +261,55 @@ function EnrollForm() {
             const data = await res.json().catch(() => ({}));
 
             if (!res.ok) {
-                alert(data?.error || "Failed to load suggestions.");
+                setAiMessages(prev => [
+                    ...prev,
+                    { sender: "ai", text: data?.error || "Failed to load suggestions." }
+                ]);
                 return;
             }
 
             setSuggestions(data);
 
-            // Prefer AI text if available, otherwise fallback to numeric averages
-            if (data.aiText && data.aiText !== "AI suggestions are unavailable right now.") {
-                alert(data.aiText);
+            if (data.aiText && !data.aiText.includes("failed")) {
+                setAiMessages(prev => [
+                    ...prev,
+                    { sender: "ai", text: data.aiText }
+                ]);
                 return;
             }
 
             const avg = data.averagesPerYear;
             if (!avg) {
-                alert("No historical data available yet.");
+                setAiMessages(prev => [
+                    ...prev,
+                    { sender: "ai", text: "No historical data available yet." }
+                ]);
                 return;
             }
 
-            alert(
+            const fallbackMessage =
                 `Suggested input data:\n\n` +
                 `Students Added (avg/yr): ${avg.studentsAdded}\n` +
                 `Graduating (avg/yr): ${avg.graduating}\n` +
                 `Exchange Students (avg/yr): ${avg.exchangeStudents}\n` +
                 `Dismissed (avg/yr): ${avg.dismissed}\n` +
                 `Not Invited (avg/yr): ${avg.notInvited}\n` +
-                `Not Return (avg/yr): ${avg.notReturn}`
-            );
+                `Not Return (avg/yr): ${avg.notReturn}`;
+
+            setAiMessages(prev => [
+                ...prev,
+                { sender: "ai", text: fallbackMessage }
+            ]);
         } catch (err) {
             console.error(err);
-            alert("Network error while loading suggestions.");
+            setAiMessages(prev => [
+                ...prev,
+                { sender: "ai", text: "Network error while loading suggestions." }
+            ]);
+        } finally {
+            setAiLoading(false);
         }
     }
-
 
     return (
         <div className="page-layout">
@@ -309,7 +332,6 @@ function EnrollForm() {
             ) : (
                 <form action="" method="POST" onSubmit={addEnrollmentRecord} className="content-box max-w-2xl mx-auto flex flex-col gap-4">
                     <button type="button" onClick={showDrafts} className="px-4 py-2">Load Draft</button>
-                    <button type="button" onClick={handleShowSuggestions} className="px-4 py-2">Show Suggestions</button>
 
                     <div className="flex items-center gap-4">
                         <label className="w-64">Your School</label>
@@ -446,6 +468,74 @@ function EnrollForm() {
                     </div>
                 </form>
             )}
+
+            {/* Floating AI Button */}
+            <button
+                type="button"
+                onClick={() => setShowAiBox(prev => !prev)}
+                className="fixed bottom-4 right-4 bg-gray-700 text-white w-20 h-20 flex items-center justify-center rounded-full shadow-lg z-50 hover:bg-gray-800 text-lg" >
+                AI
+            </button>
+
+            {/* Floating AI Chat Box */}
+            {showAiBox && (
+                <div className="fixed bottom-20 right-4 w-105 bg-white border border-gray-300 rounded-lg shadow-xl z-50 flex flex-col overflow-hidden">
+                    <div className="bg-gray-700 text-white px-4 py-2 flex justify-between items-center">
+                        <span className="font-semibold">Enrollment Assistant</span>
+                        <button
+                            type="button"
+                            onClick={() => setShowAiBox(false)}
+                            className="text-white font-bold"
+                        >
+                            ×
+                        </button>
+                    </div>
+
+                    <div className="p-3 h-72 overflow-y-auto flex flex-col gap-2 bg-gray-50">
+                        {aiMessages.map((msg, index) => (
+                            <div
+                                key={index}
+                                className={`max-w-[85%] p-2 rounded-lg whitespace-pre-line ${
+                                    msg.sender === "ai"
+                                        ? "bg-gray-200 text-black self-start"
+                                        : "bg-blue-500 text-white self-end"
+                                }`}
+                            >
+                                {msg.text}
+                            </div>
+                        ))}
+
+                        {aiLoading && (
+                            <div className="bg-gray-200 text-black self-start p-2 rounded-lg max-w-[85%]">
+                                Thinking...
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="p-2 border-t bg-white flex gap-2">
+                        <button
+                            type="button"
+                            onClick={handleShowSuggestions}
+                            className="flex-1 bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600"
+                        >
+                            AI Suggestions
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() =>
+                                setAiMessages([
+                                    { sender: "ai", text: "Hi! Click “AI Suggestions” and I’ll help with enrollment recommendations." }
+                                ])
+                            }
+                            className="px-3 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                        >
+                            Clear
+                        </button>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 }
