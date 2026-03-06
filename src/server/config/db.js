@@ -1,7 +1,14 @@
 import { MongoClient, ServerApiVersion } from "mongodb";
 import { loadEnvFile } from "node:process";
 
-loadEnvFile(".env");
+
+try {
+    loadEnvFile();
+} catch (e) {
+    // render was given the env contents
+    console.log(".env file not found, skipping...");
+}
+
 const uri = process.env.MONGO_URI;
 
 const client = new MongoClient(uri, {
