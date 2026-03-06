@@ -16,11 +16,17 @@ function AdmissionForm() {
     const [draftsShowing, setDraftsShowing] = useState(false);
     const [drafts, setDrafts] = useState([]);
 
+    const [submitted, setSubmitted] = useState(false);
     const navigate = useNavigate()
 
-    // const token = localStorage.getItem("token");
-    // const schoolId = localStorage.getItem("schoolId");
+    //voice to text STUFF
+    const [voiceText, setVoiceText] = useState("");
+    const [isListening, setIsListening] = useState(false);
+
+    const token = localStorage.getItem("token");
+    const schoolId = localStorage.getItem("schoolId");
     const school = localStorage.getItem("school");
+    const [showHelp, setShowHelp] = useState(false);
 
     const formFields = [
         { label: "Enrollment Capacity", name: "enrollmentCapacity", value: enrollmentCapacity, setter: setEnrollmentCapacity, type: "number" },
@@ -30,7 +36,7 @@ function AdmissionForm() {
         { label: "Completed Applications", name: "completedApplications", value: completedApplications, setter: setCompletedApplications, type: "number" },
         { label: "Acceptances", name: "acceptances", value: acceptances, setter: setAcceptances, type: "number" },
         { label: "Total Newly Enrolled", name: "totalNewlyEnrolled", value: totalNewlyEnrolled, setter: setTotalNewlyEnrolled, type: "number" },
-        { label: "Grade Level (0 for Pre-k, 1 for Kindergarten, etc.):", name: "grade", value: grade, setter: setGrade, type: "number", min: 0, max: 13},
+        { label: "Grade Level (0 for Pre-k, 1 for Kindergarten, etc.)", name: "grade", value: grade, setter: setGrade, type: "number", min: 0, max: 13},
     ];
 
     const admission_data = formFields.reduce((acc, field) => {
@@ -39,10 +45,91 @@ function AdmissionForm() {
         return acc;
     }, {
         //other values
-        school: Number(localStorage.getItem("schoolId")),
+        schoolId: Number(schoolId), //the school name
         year: Number(year),
         soc: soc
     });
+
+    function startListening() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+            alert("Speech Recognition not supported in this browser. Use Chrome.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = "en-US";
+        recognition.interimResults = false;
+
+        recognition.onstart = () => setIsListening(true);
+        recognition.onend = () => setIsListening(false);
+
+        recognition.onresult = (event) => {
+            let transcript = event.results[0][0].transcript.toLowerCase();
+
+            // Convert spoken "comma" into actual comma
+            transcript = transcript.replace(/comma/g, ",");
+
+            setVoiceText(transcript);
+            processVoiceInput(transcript);
+        };
+
+        recognition.start();
+    }
+
+
+    function processVoiceInput(text) {
+
+        let transcript = text.toLowerCase();
+
+        // Normalize variations
+        transcript = transcript.replace(/students? of color/g, "soc");
+        transcript = transcript.replace(/comma/g, ",");
+        transcript = transcript.replace(/student of color/g, "soc");
+
+        const yearMatch = transcript.match(/year\s*(\d{4})/);
+
+        if (yearMatch) {
+            const spokenYear = parseInt(yearMatch[1]);
+
+            if (spokenYear >= 1990 && spokenYear <= 2026) {
+                const dropdownIndex = spokenYear - 1993;
+                setYear(dropdownIndex.toString());
+            }
+
+            transcript = transcript.replace(yearMatch[0], "");
+        }
+
+        const socMatch = transcript.match(/soc\s*(yes|no|true|false)/);
+
+        if (socMatch) {
+            const value = socMatch[1];
+            setSoc(value === "yes" || value === "true");
+            transcript = transcript.replace(socMatch[0], "");
+        }
+
+        transcript = transcript
+            .replace(/,+/g, ",")
+            .replace(/^,|,$/g, "")
+            .trim();
+
+        let values = transcript.split(",")
+            .map(v => v.trim())
+            .filter(v => v !== "");
+
+        if (values.length === 0) {
+            values = transcript.match(/\d+/g) || [];
+        }
+
+        values.forEach((val, index) => {
+            const number = val.match(/\d+/);
+            if (number && formFields[index]) {
+                formFields[index].setter(number[0]);
+            }
+        });
+    }
+
 
     function addAdmissionRecord(e) {
         e.preventDefault();
@@ -65,10 +152,18 @@ function AdmissionForm() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(admission_data)
-        }).then(res => res.json())
+        }).then(res => {
+            if (res.ok) {
+                setSubmitted(true);
+                //wait 2 seconds before moving to dash, to see green box
+                setTimeout(() => {
+                    navigate("/Dashboards");
+                }, 2000);
+            }
+            return res.json();
+        })
             .then(data => {
                 console.log(data);
-                navigate("/Dashboards");
             })
     }
 
@@ -113,15 +208,41 @@ function AdmissionForm() {
         setDraftsShowing(false);
     }
 
+    function deleteDraft(draft) {
+        const drafts = JSON.parse(localStorage.getItem("draftEnrollments"));
+        const newDrafts = drafts.filter(item => item.created !== draft.created);
+        setDrafts(newDrafts);
+        localStorage.setItem("draftEnrollments", JSON.stringify(newDrafts));
+    }
+
+    function clearAllFields() {
+        setEnrollmentCapacity("");
+        setContractedBoys("");
+        setContractedGirls("");
+        setContractedNB("");
+        setCompletedApplications("");
+        setAcceptances("");
+        setTotalNewlyEnrolled("");
+        setGrade("");
+        setVoiceText("");
+        setSoc(false);
+    }
+
     return (
         <div className="page-layout">
             <h1> Add Admission Record</h1>
             {draftsShowing ? (
                 <div className="content-box flex flex-col gap-2">
                     {drafts.map((draft, index) => (
-                        <button key={index} type="button" onClick={() => loadDraft(draft)} className="px-3 py-2 text-left">
-                            Draft {index + 1} – {draft.created}
-                        </button>
+                        <div>
+                            <button key={index} type="button" onClick={() => loadDraft(draft)} className="text-left">
+                                Draft {index + 1} – {draft.created}
+                            </button>
+                            {"  "}
+                            <button key={index} type="button" onClick={() => deleteDraft(draft)} className="bg-red-500 hover:bg-red-700 text-left ">
+                                Delete
+                            </button>
+                        </div>
                     ))}<br />
                     <button onClick={() => setDraftsShowing(false)} className="px-4 py-2">Back</button>
                 </div>
@@ -130,14 +251,14 @@ function AdmissionForm() {
                     <button type="button" onClick={showDrafts} className="px-4 py-2">Load Draft</button>
 
                     <div className="flex items-center gap-4">
-                        <label className="w-64">Your School:</label>
+                        <label className="w-64">Your School</label>
                         <select name="school" disabled value={school} className="flex-1 border p-2 rounded">
                             <option>{school}</option>
                         </select>
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <label className="w-64">School Year for This Enrollment:</label>
+                        <label className="w-64">School Year for This Enrollment</label>
                         <select name="schoolyr" value={year} onChange={(e) => setYear(e.target.value)} className="flex-1 border p-2 rounded">
                             {Array.from({ length: 33 }, (_, i) => {
                                 const yearValue = 1994 + i;
@@ -164,13 +285,96 @@ function AdmissionForm() {
 
                     {/* Checkbox: SOC */}
                     <div className="flex items-center gap-4">
-                        <label className="w-64">Is This Data For SOC:</label>
+                        <label className="w-64">Is This Data For SOC</label>
                         <input type="checkbox" checked={soc} onChange={(e) => setSoc(e.target.checked)} className="h-5 w-5"/>
                     </div>
 
-                    <div className="flex flex-col gap-2 mt-4">
-                        <button type="submit" className="px-4 py-2">Add Enrollment</button>
-                        <button type="button" onClick={addDraftAdmissionRecord} className="px-4 py-2">Save Draft</button>
+                    <div className="border-2 border-gray-400 rounded-lg p-4 mt-4">
+                        <button
+                            type="button"
+                            onClick={() => setShowHelp(!showHelp)}
+                            className="font-semibold underline"
+                        >
+                            {showHelp ? "Hide Voice Instructions ▲" : "Show Voice Instructions ▼"}
+                        </button>
+
+                        {showHelp && (
+                            <div className="mt-3 text-sm leading-relaxed text-black dark:text-white">
+                                <p>
+                                    This is a Voice to Text feature that enables you to record data while speaking.
+                                </p>
+
+                                <p className="mt-2">
+                                    Press Start and say the numbers you would like to input from top to bottom.
+                                </p>
+
+                                <p className="mt-2">
+                                    Say <strong>“Comma”</strong> when you want to go into a new row.
+                                </p>
+
+                                <p className="mt-2">
+                                    Say <strong>“Year”</strong> and then a value to change the year of enrollment.
+                                </p>
+
+                                <p className="mt-2">
+                                    Say <strong>“Students of Color”</strong>, <strong>“Student of Color”</strong>, or <strong>“SOC”</strong>
+                                    then either <strong>Yes</strong> or <strong>No</strong> to add the data to the SOC database.
+                                </p>
+
+                                <p className="mt-3 font-medium">
+                                    Example:
+                                </p>
+
+                                <p className="italic">
+                                    "6 Comma 8 Comma 14 Comma Year 2015 Comma SOC yes"
+                                </p>
+
+                                <p className="mt-2">
+                                    Will fill out the first 3 fields and Year and SOC.
+                                </p>
+
+                                <p className="mt-2">
+                                    If you want to delete your text use the <strong>Clear All Fields</strong> button.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={clearAllFields}
+                        className="bg-red-500 text-white px-4 py-2 rounded"
+                    >
+                        Clear All Fields
+                    </button>
+
+                    <div className="flex flex-col gap-2 mt-4 border-t pt-4">
+                        <label>Voice Input (Say numbers in order)</label>
+
+                        <textarea
+                            value={voiceText}
+                            onChange={(e) => {
+                                const newText = e.target.value.toLowerCase();
+                                setVoiceText(newText);
+                                processVoiceInput(newText);
+                            }}
+                            className="border p-2 rounded"
+                            placeholder="Say numbers separated by comma, or type manually..."
+                        />
+
+                        <button
+                            type="button"
+                            onClick={startListening}
+                            className="bg-blue-500 text-white px-4 py-2 rounded"
+                        >
+                            {isListening ? "Listening..." : "Start Voice Input"}
+                        </button>
+                    </div>
+
+                    <div className="flex flex-row gap-2 mt-2 justify-center">
+                        <button type="button" onClick={addDraftAdmissionRecord} className="flex-1">Save Draft</button>
+                        <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded">Add Admissions</button>
+
                     </div>
                 </form>
             )}

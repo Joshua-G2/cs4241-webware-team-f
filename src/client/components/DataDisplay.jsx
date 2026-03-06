@@ -3,6 +3,8 @@ import {
     BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer
 } from "recharts";
 
+//THIS IS A TEST COMPONENT FOR THE DATA DISPLAY
+
 function Charts() {
     const [schoolIdData, setSchoolIdData] = useState([]);
     const [schoolYearData, setSchoolYearData] = useState([]);
