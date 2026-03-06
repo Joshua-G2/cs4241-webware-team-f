@@ -50,7 +50,7 @@ function Login() {
         e.preventDefault();
         console.log("Login Received: ", username, password);
 
-        const body = JSON.stringify( {username: username, password: password} );
+        const body = JSON.stringify( { username, password, school: school.trim() || undefined, schoolId: schoolId || undefined } );
         const response = await fetch( "/login", {
             method:'POST',
             headers: {
@@ -78,6 +78,8 @@ function Login() {
                 console.log(schoolId)
                 setBadLogin("");
                 navigate('/Dashboards')
+            } else if (received_tk && received_tk.error) {
+                setBadLogin(received_tk.error);
             } else {
                 console.log("Bad Login")
                 setBadLogin("Invalid username or password.");
@@ -124,7 +126,6 @@ function Login() {
                             id="school"
                             placeholder="Start Typing..."
                             value={school}
-                            required
                             autoComplete="off"
                             onChange={(e) => {
                                 setSchool(e.target.value);

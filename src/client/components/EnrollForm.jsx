@@ -252,7 +252,7 @@ function EnrollForm() {
 
         try {
             const res = await fetch(
-                `http://localhost:3000/api/enrollment/suggestions?schoolId=${Number(schoolId)}&soc=${soc ? 1 : 0}`,
+                `/api/enrollment/suggestions?schoolId=${Number(schoolId)}&soc=${soc ? 1 : 0}`,
                 {
                     headers: { Authorization: `Bearer ${token}` },
                 }
@@ -380,6 +380,7 @@ function EnrollForm() {
                         <input type="checkbox" checked={soc} onChange={(e) => setSoc(e.target.checked)} className="h-5 w-5"/>
                     </div>
 
+                    {/*Voice Input*/}
                     <div className="flex flex-col gap-2 mt-4 border-t pt-4">
                         <label>Voice Input (Say numbers in order)</label>
 
@@ -397,13 +398,13 @@ function EnrollForm() {
                         <button
                             type="button"
                             onClick={startListening}
-                            className="bg-blue-500 text-white px-4 py-2 rounded"
+                            className="bg-blue-500 text-white px-4 py-2"
                         >
                             {isListening ? "Listening..." : "Start Voice Input"}
                         </button>
                     </div>
 
-                    <div className="border-2 border-gray-400 rounded-lg p-4 mt-4">
+                    <div className="border-2 border-gray-400 p-4 mt-4 rounded-lg">
                         <button
                             type="button"
                             onClick={() => setShowHelp(!showHelp)}
@@ -417,59 +418,50 @@ function EnrollForm() {
                                 <p>
                                     This is a Voice to Text feature that enables you to record data while speaking.
                                 </p>
-
                                 <p className="mt-2">
                                     Press Start and say the numbers you would like to input from top to bottom.
                                 </p>
-
                                 <p className="mt-2">
                                     Say <strong>“Comma”</strong> when you want to go into a new row.
                                 </p>
-
                                 <p className="mt-2">
                                     Say <strong>“Year”</strong> and then a value to change the year of enrollment.
                                 </p>
-
                                 <p className="mt-2">
                                     Say <strong>“Students of Color”</strong>, <strong>“Student of Color”</strong>, or <strong>“SOC”</strong>
                                     then either <strong>Yes</strong> or <strong>No</strong> to add the data to the SOC database.
                                 </p>
-
                                 <p className="mt-2">
                                     Say <strong>“Gender”</strong>, or <strong>“Genders”</strong>
                                     then either <strong>Male</strong>, <strong>M</strong>, <strong>Female</strong>, <strong>F</strong>, <strong>All</strong>  or <strong>All Genders</strong> to change the Gender of the enrollment
                                 </p>
-
                                 <p className="mt-3 font-medium">
                                     Example:
                                 </p>
-
                                 <p className="italic">
                                     "6 Comma 8 Comma 14 Comma Year 2015 Comma SOC yes"
                                 </p>
-
                                 <p className="mt-2">
                                     Will fill out the first 3 fields and Year and SOC.
                                 </p>
-
                                 <p className="mt-2">
                                     If you want to delete your text use the <strong>Clear All Fields</strong> button.
                                 </p>
                             </div>
                         )}
                     </div>
-
                     <button
                         type="button"
                         onClick={clearAllFields}
-                        className="bg-red-500 text-white px-4 py-2 rounded"
+                        className="bg-red-500 text-white px-4 py-2"
                     >
                         Clear All Fields
                     </button>
 
+                    {/*Submit and Draft Buttons*/}
                     <div className="flex flex-row gap-2 mt-2 justify-center">
                         <button type="button" onClick={addDraftEnrollmentRecord} className="flex-1">Save Draft</button>
-                        <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded">Add Enrollment</button>
+                        <button type="submit" className="bg-green-500 text-white px-4 py-2">Add Enrollment</button>
                     </div>
                 </form>
             )}

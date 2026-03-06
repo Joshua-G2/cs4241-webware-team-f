@@ -7,7 +7,7 @@ const SECRET_KEY = process.env.SECRET_KEY;
 
 /** POST /login - issue JWT for valid username/password */
 router.post("/login", async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, school, schoolId } = req.body;
     if (!username || !password) {
         return res.status(400).send("Username and password required");
     }
@@ -16,6 +16,10 @@ router.post("/login", async (req, res) => {
         const results = await db.collection("Logins").find({ username, password }).toArray();
         if (results.length > 0) {
             const isAdmin = results[0].isAdmin;
+            const hasSchool = Boolean(school?.trim() || schoolId);
+            if (!isAdmin && !hasSchool) {
+                return res.status(400).json({ error: "School is required for non-admin users." });
+            }
             const payload = { username, isAdmin };
             const token = jwt.sign(payload, SECRET_KEY, { expiresIn: "1h" });
             console.log("Granting Token...", token);

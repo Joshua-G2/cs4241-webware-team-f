@@ -149,7 +149,9 @@ export default function Dashboards() {
                         onClick={() => setDataMode("enrollment")}
                         style={{
                             fontWeight: dataMode === "enrollment" ? 700 : 400,
-                            background: dataMode === "enrollment" ? "" : "transparent",
+                            // background: dataMode === "enrollment" ? "" : "transparent",
+                            opacity: dataMode === "enrollment" ? 1 : 0.5,
+
                         }}
                     >
                         Enrollment
@@ -159,7 +161,8 @@ export default function Dashboards() {
                         onClick={() => setDataMode("admissions")}
                         style={{
                             fontWeight: dataMode === "admissions" ? 700 : 400,
-                            background: dataMode === "admissions" ? "" : "transparent",
+                            // background: dataMode === "admissions" ? "" : "transparent",
+                            opacity: dataMode === "admissions" ? 1 : 0.5,
                         }}
                     >
                         Admissions

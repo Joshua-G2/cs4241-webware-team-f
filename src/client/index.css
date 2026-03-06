@@ -10,7 +10,7 @@
     font-weight: 400;
     color-scheme: light dark;
     /* Using Tailwind's colors or hex for the dark/light toggle */
-    @apply bg-gray-100 text-[#213547] antialiased;
+    @apply bg-blue-50 text-[#213547] antialiased;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
   }
@@ -106,7 +106,7 @@
 
   /* nice box look */
   .content-box {
-    @apply p-6 bg-white dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md;
+    @apply p-6 bg-white dark:bg-gray-700/30 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md;
   }
 
   /*red error box*/
